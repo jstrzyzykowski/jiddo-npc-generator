@@ -1,11 +1,12 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: true
 ---
-# AI Rules for {app-name}
 
-{project-description}
+# AI Rules for Jiddo NPC Generator
+
+Jiddo NPC Generator to aplikacja ułatwiająca projektowanie i generowanie plików NPC dla serwerów Open Tibia w systemie Jiddo (TFS ≤ 1.5). Celem jest znaczące skrócenie czasu tworzenia NPC przez eliminację ręcznego pisania plików XML i skryptów LUA w przypadku prostych zastosowań. W MVP AI generuje wyłącznie plik XML na podstawie wprowadzonych parametrów, a skrypt LUA jest wspólnym domyślnym plikiem default.lua; aplikacja nie udostępnia edycji manualnej XML ani Lua.
 
 ## Tech Stack
 
@@ -14,6 +15,12 @@ alwaysApply: true
 - React 19
 - Tailwind 4
 - Shadcn/ui
+
+## Preferred libraries
+
+- react-hook-form
+- zod + zodResolver
+- Lucide Icons
 
 ## Project Structure
 
@@ -28,7 +35,7 @@ When introducing changes to the project, always follow the directory structure b
 - `./src/types.ts` - Shared types for backend and frontend (Entities, DTOs)
 - `./src/components` - Client-side components written in Astro (static) and React (dynamic)
 - `./src/components/ui` - Client-side components from Shadcn/ui
-- `./src/lib` - Services and helpers 
+- `./src/lib` - Services and helpers
 - `./src/assets` - static internal assets
 - `./public` - public assets
 
