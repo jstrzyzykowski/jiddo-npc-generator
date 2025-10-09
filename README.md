@@ -1,94 +1,170 @@
-# 10x Astro Starter
+## 1. Jiddo NPC Generator
 
-A modern, opinionated starter template for building fast, accessible, and AI-friendly web applications.
+![Node](https://img.shields.io/badge/node-22.15.0-026e00?logo=node.js&logoColor=white)
+![Astro](https://img.shields.io/badge/Astro-5.x-FF5D01?logo=astro&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Version](https://img.shields.io/badge/version-0.0.1-informational)
+![License](https://img.shields.io/badge/license-TBD-lightgrey)
 
-## Tech Stack
+## 2. Project description
 
-- [Astro](https://astro.build/) v5.5.5 - Modern web framework for building fast, content-focused websites
-- [React](https://react.dev/) v19.0.0 - UI library for building interactive components
-- [TypeScript](https://www.typescriptlang.org/) v5 - Type-safe JavaScript
-- [Tailwind CSS](https://tailwindcss.com/) v4.0.17 - Utility-first CSS framework
+Jiddo NPC Generator is a web application that streamlines designing and generating NPC files for Open Tibia servers using the Jiddo NPC system (TFS ≤ 1.5). The MVP focuses on fast, validated creation of simple NPCs (e.g., vendors) by collecting parameters in a guided wizard and generating a consistent Jiddo XML file. The Lua script is a shared `default.lua` (read‑only preview) and is not generated per NPC in the MVP. The app does not provide manual XML/Lua editing; users copy the generated content.
 
-## Prerequisites
+Target users include Content Designers/Scripters (create and edit NPCs, publish) and Mappers/Admins (browse and copy XML/Lua for integration).
 
-- Node.js v22.14.0 (as specified in `.nvmrc`)
-- npm (comes with Node.js)
+### Table of Contents
 
-## Getting Started
+- [3. Tech stack](#3-tech-stack)
+- [4. Getting started locally](#4-getting-started-locally)
+- [5. Available scripts](#5-available-scripts)
+- [6. Project scope](#6-project-scope)
+- [7. Project status](#7-project-status)
+- [8. License](#8-license)
 
-1. Clone the repository:
+For full product requirements, see the PRD.
+
+## 3. Tech stack
+
+- Frontend: Astro 5 (with React 19 islands), TypeScript 5, Tailwind CSS 4, shadcn/ui
+- Runtime/libs: `@astrojs/react`, `@astrojs/node`, `lucide-react`, `class-variance-authority`, `clsx`, `tailwind-merge`
+- Backend (planned): Supabase (Auth + Storage)
+- AI provider (planned): OpenRouter.ai (access to multiple model vendors)
+- Tooling: ESLint 9, Prettier (with `prettier-plugin-astro`)
+- CI/CD & hosting (planned): GitHub Actions, Netlify
+
+References:
+
+- Tech overview: [.ai/tech-stack.md](.ai/tech-stack.md)
+- Product requirements: [.ai/prd.md](.ai/prd.md)
+- Research notes (Jiddo NPC system and modules): [`spec/research/`](spec/research)
+
+## 4. Getting started locally
+
+### Prerequisites
+
+- Node.js 22.15.0 (see `.nvmrc`)
+- npm (repository uses `package-lock.json`)
+
+Optional/coming soon (not required to run the current UI scaffold):
+
+- Supabase project (URL + anon key) for Magic Link auth
+- OpenRouter API key for XML generation
+
+### Setup
 
 ```bash
-git clone https://github.com/przeprogramowani/10x-astro-starter.git
-cd 10x-astro-starter
-```
+# 1) Use the correct Node version
+nvm use 22.15.0
 
-2. Install dependencies:
-
-```bash
+# 2) Install dependencies
 npm install
-```
 
-3. Run the development server:
-
-```bash
+# 3) Start the dev server (http://localhost:4321)
 npm run dev
 ```
 
-4. Build for production:
+Build and preview:
 
 ```bash
+# Build for production
 npm run build
+
+# Preview the production build locally
+npm run preview
 ```
 
-## Available Scripts
+Linting and formatting:
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
-- `npm run lint:fix` - Fix ESLint issues
-
-## Project Structure
-
-```md
-.
-├── src/
-│   ├── layouts/    # Astro layouts
-│   ├── pages/      # Astro pages
-│   │   └── api/    # API endpoints
-│   ├── components/ # UI components (Astro & React)
-│   └── assets/     # Static assets
-├── public/         # Public assets
+```bash
+npm run lint
+npm run lint:fix
+npm run format
 ```
 
-## AI Development Support
+### Project structure
 
-This project is configured with AI development tools to enhance the development experience, providing guidelines for:
+```text
+./
+├─ src/
+│  ├─ layouts/           # Astro layouts
+│  ├─ pages/             # Astro pages (routes)
+│  ├─ components/        # UI components (Astro + React)
+│  │  └─ ui/             # shadcn/ui components
+│  ├─ lib/               # Helpers and services
+│  ├─ styles/            # Global styles
+│  └─ db/                # Supabase clients and types (planned)
+├─ public/               # Static assets
+├─ spec/                 # Product/research docs
+└─ .ai/                  # PRD and tech stack docs
+```
 
-- Project structure
-- Coding practices
-- Frontend development
-- Styling with Tailwind
-- Accessibility best practices
-- Astro and React guidelines
+## 5. Available scripts
 
-### Cursor IDE
+- `npm run dev`: Start Astro dev server
+- `npm run build`: Build the site for production
+- `npm run preview`: Preview the production build locally
+- `npm run astro`: Run the Astro CLI directly
+- `npm run lint`: Run ESLint
+- `npm run lint:fix`: Run ESLint with auto-fixes
+- `npm run format`: Format files with Prettier
 
-The project includes AI rules in `.cursor/rules/` directory that help Cursor IDE understand the project structure and provide better code suggestions.
+## 6. Project scope
 
-### GitHub Copilot
+### In scope (MVP)
 
-AI instructions for GitHub Copilot are available in `.github/copilot-instructions.md`
+- Authentication: Supabase Magic Link (link TTL 15 min, session 7 days, redirect after login)
+- NPC Wizard (Jiddo system TFS ≤ 1.5):
+  - Basics: name, `script` fixed to `default.lua` (disabled), walkinterval, floorchange, health (now/max)
+  - Appearance: look type; for player outfits: head, body, legs, feet, addons
+  - Messages: greet, farewell, decline, noshop, oncloseshop
+  - Modules: Shop and Keywords active; Focus/Travel/Voice visible but disabled
+- Shop (active):
+  - Buy/Sell lists with `name`, `itemId`, `price`, `subType/charges`; optional `container/realName`
+  - Interface mode: trade window vs talk mode
+  - Limits: ~255 items per list; validation of required/number fields
+- Keywords (active):
+  - Entries with one or more trigger phrases and a response
+  - Limits: ~255 entries; phrase 1–64 chars, response up to 512 chars; no duplicates (case-insensitive)
+- Generation & editing:
+  - Create: send parameters → AI returns Jiddo XML
+  - Edit: send updated parameters + current XML → AI returns updated XML
+  - No manual XML/Lua editing in-app; `default.lua` is shared and read‑only
+- Previews & copy:
+  - Escaped text previews for XML and `default.lua`; copy-to-clipboard
+  - Content size limit 256 KB per field; blocks save/copy with clear error
+- Lists & navigation:
+  - HOME: featured 10 latest published NPCs
+  - `/npcs`: SSR first 100 results, cursor-based infinite scroll thereafter
+  - NPC cards: 4:3 placeholder, name, author, active modules, implementation type (XML in MVP)
+- NPC details page (public): metadata + XML/Lua previews (read-only), copy actions
+- Publishing model & permissions:
+  - Create → private; Publish → public (no unpublish); soft delete
+  - Owner-only actions (edit/publish/soft delete) enforced by user ID
+- Validation and constraints: appearance ranges, positive integers where required; Shop and Keywords limits
+- Telemetry: events (NPC Created, NPC Published), TTFNPC, Create→Publish conversion, generation error rates
 
-### Windsurf
+### Out of scope (MVP)
 
-The `.windsurfrules` file contains AI configuration for Windsurf.
+- Unpublish action
+- Full UI for Travel/Voice modules
+- Advanced quest/storage/vocation/level gating beyond simple examples
+- Ratings, filtering/search (beyond basic navigation/infinite scroll)
+- Password reset (auth via Magic Link only)
+- Share mechanisms beyond standard link
+- Import/export bundles (e.g., ZIP of XML+LUA)
+- Support for other NPC systems (e.g., RevNpcSys TFS 1.6+, Enhanced, OTX2)
+- Versioning of edits
+- Manual content editing in previews
 
-## Contributing
+See details in [.ai/prd.md](.ai/prd.md).
 
-Please follow the AI guidelines and coding practices defined in the AI configuration files when contributing to this project.
+## 7. Project status
 
-## License
+- Version: 0.0.1
+- Status: Early WIP; UI scaffold in Astro/React/Tailwind. Integration with Supabase auth, AI generation via OpenRouter, and data persistence is planned next.
+- Roadmap (short-term): auth flow, NPC wizard forms with schema validation, AI-powered XML generation, preview and copy UX, publish model, public lists/detail pages, basic telemetry.
 
-MIT
+## 8. License
+
+TBD. No license has been selected yet. Until a license is added, all rights are reserved. If you intend to use this project in production or redistribute it, please open an issue to discuss licensing.
