@@ -63,7 +63,7 @@ Ręczne tworzenie pary plików (XML + LUA) dla Jiddo jest czasochłonne, podatne
 
 - Tryb definicji: XML listy (aktywny) vs Lua (ShopModule API) widoczne, ale wyłączone w MVP.
 - Listy buy/sell: pola name, itemId, price, subType/charges; opcjonalnie container/realName.
-- Tryb interfejsu: trade window vs talk mode.
+- Tryb interfejsu: trade window vs talk mode. Wybranie "talk mode" rezerwuje standardowe frazy (np. "trade", "buy", "sell", "shop"), które stają się niedostępne w module Keywords.
 - Komunikaty sklepu z walidacją długości i znaków.
 - Limit około 255 pozycji na listę.
 
@@ -77,6 +77,7 @@ Ręczne tworzenie pary plików (XML + LUA) dla Jiddo jest czasochłonne, podatne
   - maksymalnie około 255 wpisów keywords,
   - fraza 1–64 znaki; brak duplikatów w ramach jednego NPC (po normalizacji wielkości liter),
   - odpowiedź do 512 znaków; treści escapowane w podglądzie,
+  - walidacja krzyżowa: aplikacja uniemożliwia dodanie frazy, która jest zarezerwowana przez moduł Shop w trybie "talk mode".
 
     3.4 Generowanie i edycja treści
 
@@ -106,9 +107,10 @@ Ręczne tworzenie pary plików (XML + LUA) dla Jiddo jest czasochłonne, podatne
 
 - Walidacja na podstawie schematu (np. Zod): appearance.mode (player|monster|item) i zakresy (kolory 0–132, addons 0–3, type>0, typeEx>0).
 - Shop: itemId/price wymagane, subType/charges liczby nieujemne, limit pozycji ~255.
-- Keywords: limity i walidacje jak w 3.3.2 (frazy, duplikaty, odpowiedzi, priorytety, konflikty z frazami sklepu).
+- Keywords: limity i walidacje jak w 3.3.2 (frazy, duplikaty, odpowiedzi, priorytety).
 - Ograniczenia treści: 256 KB na pole; nazwy i komunikaty z limitami długości (zgodnie z UI/UX i bezpieczeństwem).
 - Prewencja stanów nieprawidłowych: potwierdzenia dla edycji opublikowanych.
+- Walidacja krzyżowa modułów: system zapobiega konfliktom fraz między modułami (np. Keywords vs Shop w trybie "talk mode").
 
   3.9 Telemetria i obserwowalność
 
@@ -281,6 +283,7 @@ Kryteria akceptacji:
 
 - Maksymalnie ~255 wpisów; próba przekroczenia limitu jest blokowana z komunikatem.
 - Fraza 1–64 znaki; odpowiedź do 512; treści escapowane w podglądzie.
+- Aplikacja blokuje próbę dodania frazy, która jest zarezerwowana przez moduł Shop, jeśli ten jest aktywny i ustawiony w tryb "talk mode".
 
 US-018
 Tytuł: Kopiowanie XML i default.lua do schowka
