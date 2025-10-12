@@ -18,7 +18,7 @@ Zakres MVP (skrót):
 - Katalog publiczny: HOME (Featured 10) + /npcs (SSR 100, infinite scroll).
 - Strona szczegółów NPC: metadane + podglądy XML/LUA (tekst, escapowany) + kopiowanie (przyciski kopiowania do schowka).
 - Shop (MVP): aktywny moduł; formularz buy/sell; limit ~255 pozycji; tryb trade window lub talk mode.
-- Keywords (MVP): aktywny moduł; frazy i odpowiedzi, dopasowanie exact/contains, wymóg focus, priorytet, limity i walidacje.
+- Keywords (MVP): aktywny moduł; frazy i odpowiedzi, limity i walidacje.
 - Telemetria: NPC Created, NPC Published; metryki TTFNPC i konwersja Create→Publish.
 
 Technologia (wysoki poziom, kontekst implementacyjny): Astro 5, TypeScript 5, React 19, Tailwind 4, shadcn/ui, Supabase (auth i storage), AI provider (np. OpenRouter) do generacji XML.
@@ -107,7 +107,7 @@ Ręczne tworzenie pary plików (XML + LUA) dla Jiddo jest czasochłonne, podatne
 
 - Walidacja na podstawie schematu (np. Zod): appearance.mode (player|monster|item) i zakresy (kolory 0–132, addons 0–3, type>0, typeEx>0).
 - Shop: itemId/price wymagane, subType/charges liczby nieujemne, limit pozycji ~255.
-- Keywords: limity i walidacje jak w 3.3.2 (frazy, duplikaty, odpowiedzi, priorytety).
+- Keywords: limity i walidacje jak w 3.3.2 (frazy, duplikaty, odpowiedzi).
 - Ograniczenia treści: 256 KB na pole; nazwy i komunikaty z limitami długości (zgodnie z UI/UX i bezpieczeństwem).
 - Prewencja stanów nieprawidłowych: potwierdzenia dla edycji opublikowanych.
 - Walidacja krzyżowa modułów: system zapobiega konfliktom fraz między modułami (np. Keywords vs Shop w trybie "talk mode").
