@@ -18,7 +18,7 @@ Zakres MVP (skrót):
 - Katalog publiczny: HOME (Featured 10) + /npcs (SSR 100, infinite scroll).
 - Strona szczegółów NPC: metadane + podglądy XML/LUA (tekst, escapowany) + kopiowanie (przyciski kopiowania do schowka).
 - Shop (MVP): aktywny moduł; formularz buy/sell; limit ~255 pozycji; tryb trade window lub talk mode.
-- Keywords (MVP): aktywny moduł; frazy i odpowiedzi, limity i walidacje.
+- Keywords (MVP): aktywny moduł; w pełni znormalizowany system fraz (wiele fraz per odpowiedź), limity i walidacje.
 - Telemetria: NPC Created, NPC Published; metryki TTFNPC i konwersja Create→Publish.
 
 Technologia (wysoki poziom, kontekst implementacyjny): Astro 5, TypeScript 5, React 19, Tailwind 4, shadcn/ui, Supabase (auth i storage), AI provider (np. OpenRouter) do generacji XML.
@@ -41,53 +41,55 @@ Ręczne tworzenie pary plików (XML + LUA) dla Jiddo jest czasochłonne, podatne
 - Logowanie przez Supabase Magic Link (bez hasła), TTL linku 15 minut, sesja ważna 7 dni.
 - Po pomyślnym logowaniu redirect na stronę główną lub ostatnio odwiedzaną stronę.
 - Wylogowanie dostępne z poziomu UI; odświeżenie sesji bez przerywania pracy w kreatorze.
-- Dostęp do tworzenia (kreator NPC)/edycji/publikacji/soft delete wyłącznie dla zalogowanych.
+- Dostęp do tworzenia (kreator NPC)/edycji/publikacji/usuwania wyłącznie dla zalogowanych.
 
   3.2 Model publikacji i uprawnień
 
-- Utworzenie NPC tworzy wersję prywatną widoczną tylko dla właściciela.
-- Publikuj ujawnia NPC publicznie; brak Unpublish w MVP (usunięcie wyłącznie przez soft delete).
-- Edycja opublikowanego NPC wymaga potwierdzenia, a wynik jest widoczny publicznie po zapisie.
-- Edycja i soft delete dozwolone wyłącznie dla właściciela; inni mają dostęp tylko do widoku publicznego.
+- Utworzenie NPC tworzy wersję prywatną (`draft`) widoczną tylko dla właściciela. Atrybut `owner_id` jest niezmienny po utworzeniu.
+- Publikacja (`Publish`) zmienia status na `published`, co ujawnia NPC publicznie. Brak funkcji `Unpublish` w MVP.
+- Edycja opublikowanego NPC wymaga potwierdzenia, a wynik jest widoczny publicznie natychmiast po zapisie.
+- Dostęp do danych jest chroniony na poziomie bazy danych (PostgreSQL) przez polityki Row-Level Security (RLS). Polityki te zapewniają, że tylko właściciel może modyfikować swoje zasoby.
+- Usunięcie NPC odbywa się poprzez mechanizm "soft delete" (ustawienie znacznika czasu `deleted_at`). Operacja ta jest kaskadowa i propaguje usunięcie na wszystkie powiązane dane (np. przedmioty w sklepie, słowa kluczowe). Fizyczne usunięcie rekordów jest zablokowane na poziomie RLS.
 
   3.3 Kreator NPC (Jiddo)
 
-- Układ: panel parametrów (aside panel) oraz dwa podglądy (XML aktywny, Lua tylko podgląd default.lua), akcje kreatora w sticky bottom, w kolejnych wersjach podgląd wizualny NPC (2D wygląd NPC, outfit, addons, kolory).
-- System: input typu select z jedną stałą opcją Jiddo (TFS ≤1.5).
-- Podstawy: name, script (text input i disabled z wartością default.lua), walkinterval, floorchange, health (now/max).
-- Wygląd: select look type; dla player outfits: head, body, legs, feet, addons.
-- Komunikaty: textarea greet, farewell, decline, noshop, oncloseshop.
+- Układ: panel parametrów (aside panel) oraz dwa podglądy (XML aktywny, Lua tylko podgląd default.lua), akcje kreatora w sticky bottom.
+- System: input typu select z jedną stałą opcją `Jiddo (TFS ≤1.5)`.
+- Podstawy: `name`, `script` (text input i disabled z wartością `default.lua`), `walkinterval`, `floorchange`, `health (now/max)`.
+- Wygląd: select `look type`; dla player outfits: `head`, `body`, `legs`, `feet`, `addons`.
+- Komunikaty: textarea `greet`, `farewell`, `decline`, `noshop`, `oncloseshop`.
 - Moduły: checkboxy Focus/Travel/Voice (widoczne, nieaktywne), Shop (aktywny), Keywords (aktywny).
 
   3.3.1 Shop (aktywny)
 
 - Tryb definicji: XML listy (aktywny) vs Lua (ShopModule API) widoczne, ale wyłączone w MVP.
-- Listy buy/sell: pola name, itemId, price, subType/charges; opcjonalnie container/realName.
-- Tryb interfejsu: trade window vs talk mode. Wybranie "talk mode" rezerwuje standardowe frazy (np. "trade", "buy", "sell", "shop"), które stają się niedostępne w module Keywords.
+- Listy buy/sell: pola `name`, `itemId`, `price`, `subType/charges`; opcjonalnie `container/realName`.
+- Tryb interfejsu: `trade window` vs `talk mode`. Wybranie `talk mode` rezerwuje standardowe frazy (np. "trade", "buy", "sell", "shop"), które stają się niedostępne w module Keywords.
 - Komunikaty sklepu z walidacją długości i znaków.
-- Limit około 255 pozycji na listę.
+- Limit około 255 pozycji na listę, egzekwowany na poziomie bazy danych.
 
   3.3.2 Keywords (aktywny)
 
 - Tryb definicji: XML (aktywny) vs Lua (keywordHandler:addKeyword) widoczne, ale wyłączone w MVP.
-- Wpis keyword składa się z:
-  - fraz wyzwalających (co najmniej 1; dopuszczalne synonimy),
-  - odpowiedzi NPC (tekst),
+- Wpis `keyword` składa się z:
+  - co najmniej jednej frazy wyzwalającej (dopuszczalne wiele synonimów),
+  - jednej odpowiedzi NPC (tekst),
 - Limity i walidacje:
   - maksymalnie około 255 wpisów keywords,
-  - fraza 1–64 znaki; brak duplikatów w ramach jednego NPC (po normalizacji wielkości liter),
+  - fraza 1–64 znaki; unikalność fraz (case-insensitive) w obrębie jednego NPC jest gwarantowana na poziomie bazy danych.
   - odpowiedź do 512 znaków; treści escapowane w podglądzie,
-  - walidacja krzyżowa: aplikacja uniemożliwia dodanie frazy, która jest zarezerwowana przez moduł Shop w trybie "talk mode".
+  - walidacja krzyżowa: aplikacja uniemożliwia dodanie frazy, która jest zarezerwowana przez moduł Shop w trybie `talk mode`.
 
     3.4 Generowanie i edycja treści
 
-- Utwórz wysyła parametry do AI; AI zwraca spójny plik XML Jiddo; Lua pozostaje default.lua.
-- Edytuj wysyła aktualne parametry + bieżące XML; AI zwraca zaktualizowany XML.
+- Utworzenie NPC jest operacją idempotentną, chronioną przez unikalny `client_request_id`, aby zapobiec duplikatom przy ponawianiu prób.
+- Utwórz (`Create`) wysyła parametry do AI; AI zwraca spójny plik XML Jiddo; Lua pozostaje `default.lua`.
+- Edytuj (`Edit`) wysyła aktualne parametry + bieżące XML; AI zwraca zaktualizowany XML.
 - Brak edycji manualnej XML ani Lua w aplikacji; użytkownik może skopiować treść i modyfikować ją poza aplikacją.
 
   3.5 Podglądy i kopiowanie
 
-- Podgląd XML i podgląd default.lua wyświetlane jako zwykły tekst (escapowany) z przyciskiem kopiowania do schowka.
+- Podgląd XML i podgląd `default.lua` wyświetlane jako zwykły tekst (escapowany) z przyciskiem kopiowania do schowka.
 - Limit rozmiaru treści 256 KB na pole; przekroczenie blokuje zapis i kopiowanie, z jasnym komunikatem o błędzie.
 - Aplikacja nie oferuje edycji manualnej treści w podglądach.
 
@@ -100,19 +102,32 @@ Ręczne tworzenie pary plików (XML + LUA) dla Jiddo jest czasochłonne, podatne
   3.7 Strona szczegółów NPC
 
 - Metadane: nazwa, autor, status (prywatny/publiczny), aktywne moduły.
-- Podgląd XML oraz podgląd default.lua (read-only, escapowane), kopiowanie do schowka.
+- Podgląd XML oraz podgląd `default.lua` (read-only, escapowane), kopiowanie do schowka.
 - Dla właściciela: akcje Edytuj, Publikuj, Soft delete.
 
   3.8 Walidacja danych i ograniczenia
 
-- Walidacja na podstawie schematu (np. Zod): appearance.mode (player|monster|item) i zakresy (kolory 0–132, addons 0–3, type>0, typeEx>0).
-- Shop: itemId/price wymagane, subType/charges liczby nieujemne, limit pozycji ~255.
-- Keywords: limity i walidacje jak w 3.3.2 (frazy, duplikaty, odpowiedzi).
-- Ograniczenia treści: 256 KB na pole; nazwy i komunikaty z limitami długości (zgodnie z UI/UX i bezpieczeństwem).
+- Walidacja na poziomie formularza (np. Zod): `appearance.mode` (`player`|`monster`|`item`) i zakresy (kolory 0–132, addons 0–3, `type`>0, `typeEx`>0).
+- Shop: `itemId`/`price` wymagane, `subType`/`charges` liczby nieujemne, limit pozycji ~255.
+- Keywords: limity i walidacje jak w 3.3.2.
+- Ograniczenia treści: 256 KB na pole; nazwy i komunikaty z limitami długości.
 - Prewencja stanów nieprawidłowych: potwierdzenia dla edycji opublikowanych.
-- Walidacja krzyżowa modułów: system zapobiega konfliktom fraz między modułami (np. Keywords vs Shop w trybie "talk mode").
+- Walidacja krzyżowa modułów: system zapobiega konfliktom fraz między modułami (np. Keywords vs Shop w trybie `talk mode`).
 
-  3.9 Telemetria i obserwowalność
+  3.9 Walidacja przy publikacji
+
+- Przed zmianą statusu NPC na `published`, dedykowany trigger bazodanowy weryfikuje integralność danych. W przypadku niespełnienia któregokolwiek warunku, transakcja jest przerywana, a użytkownik otrzymuje stosowny komunikat.
+- Lista kontrolna warunków:
+  - A. Podstawowa integralność:
+    - Nazwa (`name`) nie może być pusta.
+    - Muszą być spełnione warunki logiczne dla atrybutów wyglądu w zależności od `look_type`.
+  - B. Walidacja aktywnych modułów (dla aktywnych, nieusuniętych rekordów):
+    - Jeśli `shop_enabled` = `true`, musi istnieć co najmniej jeden przedmiot w `npc_shop_items`.
+    - Jeśli `keywords_enabled` = `true`, musi istnieć co najmniej jedno słowo kluczowe w `npc_keywords`, a każde z nich musi mieć co najmniej jedną frazę w `npc_keyword_phrases`.
+  - C. Weryfikacja stanu:
+    - Rekord nie może być oznaczony jako usunięty (`deleted_at` musi być `NULL`).
+
+      3.10 Telemetria i obserwowalność
 
 - Zdarzenia: NPC Created, NPC Published.
 - Metryki: TTFNPC (czas od wejścia do kreatora do pierwszego działającego NPC), konwersja Create→Publish, podstawowe wskaźniki błędów generacji.
@@ -193,7 +208,9 @@ Opis: Jako właściciel chcę opublikować gotowego NPC, aby był widoczny publi
 Kryteria akceptacji:
 
 - Akcja Publikuj dostępna dla prywatnego NPC.
-- Po publikacji NPC jest widoczny na HOME i /npcs.
+- Przed publikacją system weryfikuje integralność danych (zgodnie z 3.9).
+- Po pomyślnej walidacji i publikacji NPC jest widoczny na HOME i /npcs.
+- W przypadku błędu walidacji, użytkownik otrzymuje jasny komunikat o brakach.
 - Brak opcji unpublish w MVP.
 
 US-008
@@ -202,7 +219,8 @@ Opis: Jako właściciel chcę miękko usunąć NPC, aby przestał być widoczny 
 Kryteria akceptacji:
 
 - Soft delete ukrywa NPC z list publicznych i strony szczegółów publicznej.
-- Właściciel nie widzi NPC na swoich listach aktywnych; dane pozostają w systemie.
+- Operacja jest kaskadowa: powiązane dane (przedmioty w sklepie, słowa kluczowe) są również oznaczane jako usunięte.
+- Właściciel nie widzi usuniętego NPC na swoich listach aktywnych.
 - Operacja nie ma opcji cofnięcia w MVP.
 
 US-009
@@ -246,8 +264,8 @@ Tytuł: Shop – dodawanie pozycji buy/sell
 Opis: Jako użytkownik chcę dodawać/usuwać/edytować pozycje buy i sell z walidacją.
 Kryteria akceptacji:
 
-- Pola: name, itemId, price, subType/charges; opcjonalnie container/realName.
-- Walidacje: itemId i price obowiązkowe; wartości liczbowe nieujemne.
+- Pola: `name`, `itemId`, `price`, `subType/charges`; opcjonalnie `container/realName`.
+- Walidacje: `itemId` i `price` obowiązkowe; wartości liczbowe nieujemne.
 - Limit ~255 pozycji na listę; przekroczenie blokuje dodanie z komunikatem.
 
 US-014
@@ -264,17 +282,18 @@ Tytuł: Walidacja pól i limit rozmiaru treści
 Opis: Jako użytkownik chcę, aby formularz uniemożliwił wprowadzenie nieprawidłowych wartości i zbyt dużych treści.
 Kryteria akceptacji:
 
-- appearance.mode (player|monster|item), kolory 0–132, addons 0–3.
-- type>0, typeEx>0, liczby całkowite tam, gdzie wymagane.
+- `appearance.mode` (`player`|`monster`|`item`), kolory 0–132, addons 0–3.
+- `type`>0, `typeEx`>0, liczby całkowite tam, gdzie wymagane.
 - Limit 256 KB na pole blokuje zapis i wyświetla komunikat.
 
 US-016
 Tytuł: Keywords – dodawanie/edycja/usuwanie wpisów
-Opis: Jako użytkownik chcę tworzyć wpisy keywords z frazami i odpowiedzią.
+Opis: Jako użytkownik chcę tworzyć wpisy keywords z wieloma frazami i jedną odpowiedzią.
 Kryteria akceptacji:
 
 - Można dodać, edytować i usunąć wpis; podgląd XML odświeża się po zapisie.
-- Frazy nie są puste; brak duplikatów po normalizacji wielkości liter.
+- Każdy wpis musi mieć co najmniej jedną frazę.
+- Frazy nie są puste; unikalność fraz w obrębie NPC jest zapewniona (case-insensitive).
 
 US-017
 Tytuł: Keywords – walidacja i limity
@@ -283,7 +302,7 @@ Kryteria akceptacji:
 
 - Maksymalnie ~255 wpisów; próba przekroczenia limitu jest blokowana z komunikatem.
 - Fraza 1–64 znaki; odpowiedź do 512; treści escapowane w podglądzie.
-- Aplikacja blokuje próbę dodania frazy, która jest zarezerwowana przez moduł Shop, jeśli ten jest aktywny i ustawiony w tryb "talk mode".
+- Aplikacja blokuje próbę dodania frazy, która jest zarezerwowana przez moduł Shop, jeśli ten jest aktywny i ustawiony w tryb `talk mode`.
 
 US-018
 Tytuł: Kopiowanie XML i default.lua do schowka
@@ -322,13 +341,13 @@ Kryteria akceptacji:
 - Błąd jest raportowany w telemetrii.
 
 US-022
-Tytuł: Błąd sieci podczas zapisu/publikacji
-Opis: Jako użytkownik chcę jasnej informacji i bezpiecznego stanu przy problemach sieciowych.
+Tytuł: Idempotentne tworzenie NPC
+Opis: Jako system, chcę zapewnić, że ponowienie próby utworzenia NPC z powodu błędu sieci nie spowoduje utworzenia duplikatu.
 Kryteria akceptacji:
 
-- Pojawia się komunikat o błędzie i opcja ponów.
-- Stan (draft/published) nie ulega niespójnym zmianom.
-- Nie powstają duplikaty rekordów.
+- Każde żądanie utworzenia NPC jest powiązane z unikalnym kluczem idempotencji (`client_request_id`).
+- Ponowne wysłanie tego samego żądania z tym samym kluczem nie tworzy nowego rekordu, lecz zwraca sukces (lub status istniejącego zasobu).
+- Mechanizm chroni przed duplikatami w przypadku problemów sieciowych i ponowień.
 
 US-023
 Tytuł: Limit pozycji w Shop
@@ -340,13 +359,13 @@ Kryteria akceptacji:
 - Istniejące pozycje można nadal edytować/usuwać.
 
 US-024
-Tytuł: Autoryzacja akcji właściciela
-Opis: Jako system chcę uniemożliwić edycję/publikację/usuwanie NPC przez osoby niebędące właścicielem.
+Tytuł: Autoryzacja akcji właściciela na poziomie bazy danych
+Opis: Jako system chcę uniemożliwić edycję/publikację/usuwanie NPC przez osoby niebędące właścicielem, egzekwując to na poziomie bazy danych.
 Kryteria akceptacji:
 
-- Próba akcji przez innego użytkownika zwraca błąd i nie zmienia danych.
-- Widok publiczny nie zawiera akcji właściciela.
-- Dostęp do API jest weryfikowany po userId właściciela.
+- Polityki RLS w bazie danych blokują każdą próbę modyfikacji zasobu przez użytkownika niebędącego jego właścicielem.
+- Próba nieautoryzowanej akcji przez API jest odrzucana przez bazę danych i zwraca błąd.
+- Widok publiczny nie zawiera kontrolek do akcji właściciela.
 
 ## 6. Metryki sukcesu
 
