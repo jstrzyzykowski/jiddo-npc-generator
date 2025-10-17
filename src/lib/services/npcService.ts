@@ -1,6 +1,17 @@
+import { createClient } from "@supabase/supabase-js";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+
 import type { SupabaseClient } from "../../db/supabase.client";
 import type { Database } from "../../db/database.types";
-import type { CreateNpcCommand, NpcLookDto, NpcStatsDto, NpcMessagesDto, NpcModulesDto } from "../../types";
+import type {
+  CreateNpcCommand,
+  NpcDetailResponseDto,
+  NpcLookDto,
+  NpcMessagesDto,
+  NpcModulesDto,
+  NpcStatsDto,
+} from "../../types";
 
 type NpcInsert = Database["public"]["Tables"]["npcs"]["Insert"];
 type NpcRow = Database["public"]["Tables"]["npcs"]["Row"];
@@ -15,6 +26,10 @@ export type NpcServiceErrorCode =
   | "NPC_INSERT_FAILED"
   | "NPC_FETCH_FAILED"
   | "NPC_ACCESS_FORBIDDEN"
+  | "NPC_NOT_FOUND"
+  | "XML_FETCH_FAILED"
+  | "XML_NOT_FOUND"
+  | "LUA_READ_FAILED"
   | "UNKNOWN";
 
 export class NpcServiceError extends Error {
@@ -27,7 +42,12 @@ export class NpcServiceError extends Error {
   }
 }
 
+const DEFAULT_XML_BUCKET = "npc-xml-files";
+const DEFAULT_LUA_FILE_PATH = resolve("src", "assets", "lua", "default.lua");
+
 export class NpcService {
+  private storageClient: SupabaseClient | null = null;
+
   constructor(private readonly supabase: SupabaseClient) {}
 
   async createNpc(command: CreateNpcCommand, ownerId: string): Promise<CreateNpcServiceResult> {
@@ -123,6 +143,227 @@ export class NpcService {
     };
 
     return base satisfies NpcInsert;
+  }
+
+  async getNpcDetails(
+    npcId: string,
+    userId: string | null,
+    options: {
+      includeDraft?: boolean;
+      storageBucket?: string;
+      luaFilePath?: string;
+    } = {}
+  ): Promise<NpcDetailResponseDto> {
+    const includeDraft = options.includeDraft ?? false;
+    const storageBucket = options.storageBucket ?? DEFAULT_XML_BUCKET;
+    const luaFilePath = options.luaFilePath ?? DEFAULT_LUA_FILE_PATH;
+
+    if (includeDraft && !userId) {
+      throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", {
+        cause: new Error("Draft access requires an authenticated user"),
+      });
+    }
+
+    const npcWithOwner = await this.fetchNpcWithOwner(npcId, includeDraft, userId);
+
+    const xmlContent = await this.fetchNpcXml(npcId, storageBucket);
+
+    const luaContent = await this.readLuaTemplate(luaFilePath);
+
+    return {
+      id: npcWithOwner.id,
+      name: npcWithOwner.name,
+      status: npcWithOwner.status,
+      system: npcWithOwner.system,
+      implementationType: npcWithOwner.implementation_type,
+      script: npcWithOwner.script,
+      look: {
+        type: npcWithOwner.look_type,
+        typeId: npcWithOwner.look_type_id,
+        itemId: npcWithOwner.look_item_id,
+        head: npcWithOwner.look_head,
+        body: npcWithOwner.look_body,
+        legs: npcWithOwner.look_legs,
+        feet: npcWithOwner.look_feet,
+        addons: npcWithOwner.look_addons,
+        mount: npcWithOwner.look_mount,
+      },
+      stats: {
+        healthNow: npcWithOwner.health_now,
+        healthMax: npcWithOwner.health_max,
+        walkInterval: npcWithOwner.walk_interval,
+        floorChange: npcWithOwner.floor_change,
+      },
+      messages: {
+        greet: npcWithOwner.greet_message,
+        farewell: npcWithOwner.farewell_message,
+        decline: npcWithOwner.decline_message,
+        noShop: npcWithOwner.no_shop_message,
+        onCloseShop: npcWithOwner.on_close_shop_message,
+      },
+      modules: {
+        focusEnabled: npcWithOwner.focus_enabled,
+        travelEnabled: npcWithOwner.travel_enabled,
+        voiceEnabled: npcWithOwner.voice_enabled,
+        shopEnabled: npcWithOwner.shop_enabled,
+        shopMode: npcWithOwner.shop_mode,
+        keywordsEnabled: npcWithOwner.keywords_enabled,
+      },
+      xml: xmlContent,
+      lua: luaContent,
+      contentSizeBytes: npcWithOwner.content_size_bytes,
+      publishedAt: npcWithOwner.published_at,
+      firstPublishedAt: npcWithOwner.first_published_at,
+      deletedAt: npcWithOwner.deleted_at,
+      owner: {
+        id: npcWithOwner.owner.id,
+        displayName: npcWithOwner.owner.display_name,
+      },
+    } satisfies NpcDetailResponseDto;
+  }
+
+  private async fetchNpcWithOwner(npcId: string, includeDraft: boolean, userId: string | null) {
+    let query = this.supabase
+      .from("npcs")
+      .select(
+        `
+          id,
+          name,
+          status,
+          system,
+          implementation_type,
+          script,
+          look_type,
+          look_type_id,
+          look_item_id,
+          look_head,
+          look_body,
+          look_legs,
+          look_feet,
+          look_addons,
+          look_mount,
+          health_now,
+          health_max,
+          walk_interval,
+          floor_change,
+          greet_message,
+          farewell_message,
+          decline_message,
+          no_shop_message,
+          on_close_shop_message,
+          focus_enabled,
+          travel_enabled,
+          voice_enabled,
+          shop_enabled,
+          shop_mode,
+          keywords_enabled,
+          content_size_bytes,
+          published_at,
+          first_published_at,
+          deleted_at,
+          owner:profiles!npcs_owner_id_fkey(
+            id,
+            display_name
+          )
+        `
+      )
+      .eq("id", npcId);
+
+    if (!includeDraft) {
+      query = query.eq("status", "published");
+    } else {
+      if (!userId) {
+        throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", {
+          cause: new Error("Draft access requires owner identifier"),
+        });
+      }
+
+      query = query.eq("owner_id", userId);
+    }
+
+    const { data, error } = await query.limit(1).maybeSingle();
+
+    if (error || !data) {
+      if (isForbiddenSupabaseError(error)) {
+        throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", { cause: error });
+      }
+
+      if (error) {
+        console.error("NpcService.fetchNpcWithOwner", error);
+      }
+
+      throw new NpcServiceError("NPC_NOT_FOUND", { cause: error ?? new Error("NPC not found") });
+    }
+
+    if (!data.owner) {
+      throw new NpcServiceError("NPC_FETCH_FAILED", {
+        cause: new Error("NPC owner data is missing"),
+      });
+    }
+
+    return data;
+  }
+
+  private async fetchNpcXml(npcId: string, bucket: string): Promise<string> {
+    const storageClient = this.ensureStorageClient();
+
+    const { data, error } = await storageClient.storage.from(bucket).download(`${npcId}.xml`);
+
+    if (error) {
+      const status =
+        typeof error === "object" && error !== null && "status" in error
+          ? (error as { status?: number }).status
+          : undefined;
+
+      if (typeof status === "number" && status === 404) {
+        throw new NpcServiceError("XML_NOT_FOUND", { cause: error });
+      }
+
+      console.error("NpcService.fetchNpcXml", error);
+      throw new NpcServiceError("XML_FETCH_FAILED", { cause: error });
+    }
+
+    try {
+      return await data.text();
+    } catch (readError) {
+      console.error("NpcService.fetchNpcXml text conversion", readError);
+      throw new NpcServiceError("XML_FETCH_FAILED", { cause: readError });
+    }
+  }
+
+  private async readLuaTemplate(luaFilePath: string): Promise<string> {
+    const absolutePath = resolve(luaFilePath);
+
+    try {
+      const buffer = await readFile(absolutePath, { encoding: "utf-8" });
+      return buffer;
+    } catch (error) {
+      console.error("NpcService.readLuaTemplate", error);
+      throw new NpcServiceError("LUA_READ_FAILED", { cause: error });
+    }
+  }
+
+  private ensureStorageClient(): SupabaseClient {
+    if (this.storageClient) {
+      return this.storageClient;
+    }
+
+    const url = import.meta.env.PUBLIC_SUPABASE_URL;
+    const serviceKey = import.meta.env.SUPABASE_SECRET_KEY;
+
+    if (!url || !serviceKey) {
+      throw new NpcServiceError("XML_FETCH_FAILED", {
+        cause: new Error("Supabase storage credentials are not configured"),
+      });
+    }
+
+    this.storageClient = createClient<Database>(url, serviceKey, {
+      auth: {
+        persistSession: false,
+      },
+    }) as SupabaseClient;
+
+    return this.storageClient;
   }
 }
 
