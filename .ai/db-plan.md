@@ -103,7 +103,7 @@
 3. Indeksy
 
 - `profiles`: indeks na `lower(display_name)` (wyszukiwanie case-insensitive, bez wymuszenia unikalności).
-- `npcs`: unikalny indeks częściowy `UNIQUE (owner_id, lower(name)) WHERE deleted_at IS NULL`; indeks opcjonalny `UNIQUE (client_request_id)`; indeks częściowy na `status`, `published_at`, `id` dla list publicznych (`WHERE deleted_at IS NULL AND status = 'published'`).
+- `npcs`: unikalny indeks częściowy `UNIQUE (owner_id, lower(name)) WHERE deleted_at IS NULL`; indeks opcjonalny `UNIQUE (client_request_id)`; indeks częściowy na `status`, `published_at`, `id` dla list publicznych (`WHERE deleted_at IS NULL AND status = 'published'`); indeksy na `updated_at` i `created_at` dla sortowania (`WHERE deleted_at IS NULL`).
 - `npc_shop_items`: indeks częściowy na (`npc_id`, `list_type`, `id`) z warunkiem `deleted_at IS NULL`; złożony indeks (`npc_id`, `deleted_at`) do walidacji limitu; indeks na `item_id` dla zapytań raportowych.
 - `npc_keywords`: indeks częściowy (`npc_id`, `deleted_at`, `sort_index`) dla ładowania ustawień; indeks częściowy `UNIQUE (npc_id, lower(response)) WHERE deleted_at IS NULL` (unikalne odpowiedzi, opcjonalnie jeśli potrzebne biznesowo).
 - `npc_keyword_phrases`: indeks częściowy `UNIQUE (npc_id, lower(phrase)) WHERE deleted_at IS NULL`; indeks częściowy (`keyword_id`, `deleted_at`, `phrase`) dla szybkiego sprawdzania konfliktów; indeks (`keyword_id`, `npc_id`) wspierający klucz obcy.
