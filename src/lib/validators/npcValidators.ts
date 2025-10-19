@@ -1,6 +1,104 @@
 import { z } from "zod";
 
-import type { CreateNpcCommand } from "../../types";
+import type { CreateNpcCommand, GetNpcListQueryDto } from "../../types";
+const CURSOR_MAX_LENGTH = 1024;
+const SEARCH_MAX_LENGTH = 255;
+const LIMIT_DEFAULT = 20;
+const LIMIT_MAX = 100;
+
+const booleanQueryParam = z
+  .preprocess((value) => {
+    if (typeof value === "string") {
+      if (value === "true") {
+        return true;
+      }
+
+      if (value === "false") {
+        return false;
+      }
+    }
+
+    return value;
+  }, z.boolean())
+  .optional();
+
+const limitQueryParam = z
+  .preprocess((value) => {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (typeof value === "number") {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed === "") {
+        return value;
+      }
+
+      const parsed = Number(trimmed);
+      if (!Number.isFinite(parsed)) {
+        return value;
+      }
+
+      return parsed;
+    }
+
+    return value;
+  }, z.number().int().min(1).max(LIMIT_MAX))
+  .optional();
+
+const getNpcListQuerySchema = z
+  .object({
+    visibility: z.enum(["public", "mine", "all"]).optional(),
+    status: z.enum(["draft", "published"]).optional(),
+    search: z
+      .preprocess((value) => {
+        if (typeof value === "string") {
+          return value.trim();
+        }
+
+        return value;
+      }, z.string().min(1).max(SEARCH_MAX_LENGTH))
+      .optional(),
+    shopEnabled: booleanQueryParam,
+    keywordsEnabled: booleanQueryParam,
+    limit: limitQueryParam,
+    cursor: z.string().min(1).max(CURSOR_MAX_LENGTH).optional(),
+    sort: z.enum(["published_at", "updated_at", "created_at"]).optional(),
+    order: z.enum(["asc", "desc"]).optional(),
+  })
+  .strict();
+
+export type GetNpcListQueryInput = z.input<typeof getNpcListQuerySchema>;
+export type GetNpcListQueryResult = z.output<typeof getNpcListQuerySchema>;
+
+export function parseGetNpcListQueryParams(params: URLSearchParams): GetNpcListQueryDto {
+  const rawEntries = Object.fromEntries(params.entries());
+  const result = getNpcListQuerySchema.safeParse(rawEntries);
+
+  if (!result.success) {
+    throw result.error;
+  }
+
+  const parsed = result.data;
+
+  const normalized: GetNpcListQueryDto = {
+    visibility: parsed.visibility,
+    status: parsed.status,
+    search: parsed.search,
+    shopEnabled: parsed.shopEnabled,
+    keywordsEnabled: parsed.keywordsEnabled,
+    limit: parsed.limit ?? LIMIT_DEFAULT,
+    cursor: parsed.cursor,
+    sort: parsed.sort ?? "published_at",
+    order: parsed.order ?? "desc",
+  };
+
+  return normalized;
+}
 
 const NPC_NAME_MAX_LENGTH = 255;
 const NPC_MESSAGE_MAX_LENGTH = 512;

@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
@@ -6,15 +7,22 @@ import type { SupabaseClient } from "../../db/supabase.client";
 import type { Database } from "../../db/database.types";
 import type {
   CreateNpcCommand,
+  GetNpcListQueryDto,
+  GetNpcListResponseDto,
   NpcDetailResponseDto,
+  NpcListItemDto,
+  NpcListModulesDto,
   NpcLookDto,
   NpcMessagesDto,
   NpcModulesDto,
+  NpcOwnerSummaryDto,
   NpcStatsDto,
+  NpcListVisibilityFilter,
 } from "../../types";
 
 type NpcInsert = Database["public"]["Tables"]["npcs"]["Insert"];
 type NpcRow = Database["public"]["Tables"]["npcs"]["Row"];
+type NpcStatus = Database["public"]["Enums"]["npc_status"];
 
 export interface CreateNpcServiceResult {
   npc: Pick<NpcRow, "id" | "status" | "owner_id" | "created_at" | "updated_at">;
@@ -45,7 +53,113 @@ export class NpcServiceError extends Error {
 const DEFAULT_XML_BUCKET = "npc-xml-files";
 const DEFAULT_LUA_FILE_PATH = resolve("src", "assets", "lua", "default.lua");
 
+const DEFAULT_LIST_LIMIT = 20;
+const MAX_LIST_LIMIT = 100;
+const ALLOWED_SORT_FIELDS = ["published_at", "updated_at", "created_at"] as const;
+const DEFAULT_SORT_FIELD = ALLOWED_SORT_FIELDS[0];
+const DEFAULT_SORT_ORDER = "desc" as const;
+
+const NPC_LIST_SELECT = `
+  id,
+  name,
+  status,
+  shop_enabled,
+  keywords_enabled,
+  published_at,
+  updated_at,
+  created_at,
+  content_size_bytes,
+  owner:profiles!npcs_owner_id_fkey (
+    id,
+    display_name
+  )
+` as const;
+
+type SortField = (typeof ALLOWED_SORT_FIELDS)[number];
+type SortOrder = "asc" | "desc";
+
+interface NormalizedGetNpcListQuery {
+  visibility: NpcListVisibilityFilter;
+  status?: NpcStatus;
+  search?: string;
+  shopEnabled?: boolean;
+  keywordsEnabled?: boolean;
+  limit: number;
+  cursor?: string;
+  sort: SortField;
+  order: SortOrder;
+}
+
+interface RawNpcListRow {
+  id: string;
+  name: string;
+  status: NpcStatus;
+  shop_enabled: boolean;
+  keywords_enabled: boolean;
+  published_at: string | null;
+  updated_at: string;
+  created_at: string;
+  content_size_bytes: number;
+  owner: {
+    id: string;
+    display_name: string;
+  } | null;
+}
+
+interface NpcListCursorPayload {
+  sortField: SortField;
+  sortValue: string | null;
+  id: string;
+}
+
 export class NpcService {
+  async getNpcList(query: GetNpcListQueryDto, userId: string | null): Promise<GetNpcListResponseDto> {
+    const normalizedQuery = normalizeNpcListQuery(query);
+
+    if (requiresAuthentication(normalizedQuery.visibility) && !userId) {
+      throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", {
+        cause: new Error("Authenticated user is required for the requested visibility"),
+      });
+    }
+
+    const limitPlusOne = normalizedQuery.limit + 1;
+
+    const builder = buildNpcListQuery(this.supabase, normalizedQuery, userId);
+    const { data, error } = await builder.limit(limitPlusOne);
+
+    if (error) {
+      if (isForbiddenSupabaseError(error)) {
+        throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", { cause: error });
+      }
+
+      console.error("NpcService.getNpcList", error);
+      throw new NpcServiceError("NPC_FETCH_FAILED", { cause: error });
+    }
+
+    const rows = (data ?? []) as RawNpcListRow[];
+    const hasNextPage = rows.length > normalizedQuery.limit;
+    const limitedRows = hasNextPage ? rows.slice(0, normalizedQuery.limit) : rows;
+
+    const items = limitedRows.map((row) => mapToNpcListItem(row));
+    const lastRow = limitedRows.at(-1) ?? null;
+    const nextCursor =
+      hasNextPage && lastRow
+        ? encodeCursor({
+            sortField: normalizedQuery.sort,
+            sortValue: getSortFieldValue(lastRow, normalizedQuery.sort),
+            id: lastRow.id,
+          })
+        : null;
+
+    return {
+      items,
+      pageInfo: {
+        nextCursor,
+        total: null,
+      },
+    } satisfies GetNpcListResponseDto;
+  }
+
   private storageClient: SupabaseClient | null = null;
 
   constructor(private readonly supabase: SupabaseClient) {}
@@ -365,6 +479,205 @@ export class NpcService {
 
     return this.storageClient;
   }
+}
+
+function normalizeNpcListQuery(query: GetNpcListQueryDto): NormalizedGetNpcListQuery {
+  const visibility = (query.visibility ?? "public") as NpcListVisibilityFilter;
+  const limitInput = typeof query.limit === "number" && Number.isFinite(query.limit) ? query.limit : DEFAULT_LIST_LIMIT;
+  const limit = Math.min(Math.max(limitInput, 1), MAX_LIST_LIMIT);
+
+  const sort = isSortField(query.sort) ? query.sort : DEFAULT_SORT_FIELD;
+  const order: SortOrder = query.order === "asc" ? "asc" : DEFAULT_SORT_ORDER;
+
+  return {
+    visibility,
+    status: query.status,
+    search: query.search?.trim() || undefined,
+    shopEnabled: typeof query.shopEnabled === "boolean" ? query.shopEnabled : undefined,
+    keywordsEnabled: typeof query.keywordsEnabled === "boolean" ? query.keywordsEnabled : undefined,
+    limit,
+    cursor: query.cursor,
+    sort,
+    order,
+  } satisfies NormalizedGetNpcListQuery;
+}
+
+function requiresAuthentication(visibility: NpcListVisibilityFilter): boolean {
+  return visibility !== "public";
+}
+
+function buildNpcListQuery(supabase: SupabaseClient, query: NormalizedGetNpcListQuery, userId: string | null) {
+  let builder = supabase
+    .from("npcs")
+    .select<typeof NPC_LIST_SELECT, RawNpcListRow>(NPC_LIST_SELECT)
+    .is("deleted_at", null);
+
+  switch (query.visibility) {
+    case "public":
+      builder = builder.eq("status", "published");
+      break;
+    case "mine":
+      if (!userId) {
+        throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", {
+          cause: new Error("Authenticated user identifier is required for mine visibility"),
+        });
+      }
+
+      builder = builder.eq("owner_id", userId);
+      break;
+    case "all":
+      break;
+  }
+
+  if (query.status) {
+    builder = builder.eq("status", query.status);
+  }
+
+  if (query.search) {
+    builder = builder.ilike("name", `%${query.search}%`);
+  }
+
+  if (typeof query.shopEnabled === "boolean") {
+    builder = builder.eq("shop_enabled", query.shopEnabled);
+  }
+
+  if (typeof query.keywordsEnabled === "boolean") {
+    builder = builder.eq("keywords_enabled", query.keywordsEnabled);
+  }
+
+  if (query.cursor) {
+    builder = applyCursorFilter(builder, query);
+  }
+
+  const isAscending = query.order === "asc";
+
+  builder = builder.order(query.sort, {
+    ascending: isAscending,
+    nullsFirst: false,
+  });
+
+  builder = builder.order("id", { ascending: isAscending });
+
+  return builder;
+}
+
+function applyCursorFilter(builder: ReturnType<typeof buildNpcListQuery>, query: NormalizedGetNpcListQuery) {
+  if (!query.cursor) {
+    return builder;
+  }
+
+  const cursor = decodeCursor(query.cursor);
+
+  if (cursor.sortField !== query.sort) {
+    throw new NpcServiceError("NPC_FETCH_FAILED", {
+      cause: new Error("Cursor sort field does not match the requested sort parameter"),
+    });
+  }
+
+  if (cursor.sortValue === null) {
+    const encodedId = encodeFilterValue(cursor.id);
+    const comparator = query.order === "asc" ? "gt" : "lt";
+    return builder.or(`and(${query.sort}.is.null,id.${comparator}.${encodedId})`);
+  }
+
+  const encodedSortValue = encodeFilterValue(cursor.sortValue);
+  const encodedId = encodeFilterValue(cursor.id);
+  const comparator = query.order === "asc" ? "gt" : "lt";
+  const tieBreakerComparator = comparator;
+
+  const cursorFilters = [
+    `${query.sort}.${comparator}.${encodedSortValue}`,
+    `and(${query.sort}.eq.${encodedSortValue},id.${tieBreakerComparator}.${encodedId})`,
+    `${query.sort}.is.null`,
+  ];
+
+  return builder.or(cursorFilters.join(","));
+}
+
+function encodeCursor(payload: NpcListCursorPayload): string {
+  const serialized = JSON.stringify(payload);
+  return Buffer.from(serialized, "utf-8").toString("base64url");
+}
+
+function decodeCursor(token: string): NpcListCursorPayload {
+  try {
+    const json = Buffer.from(token, "base64url").toString("utf-8");
+    const parsed = JSON.parse(json) as Partial<NpcListCursorPayload>;
+
+    if (!parsed || typeof parsed !== "object") {
+      throw new Error("Cursor payload is not an object");
+    }
+
+    if (!isSortField(parsed.sortField)) {
+      throw new Error("Cursor sort field is invalid");
+    }
+
+    if (typeof parsed.id !== "string" || parsed.id.length === 0) {
+      throw new Error("Cursor id is invalid");
+    }
+
+    if (parsed.sortValue !== null && typeof parsed.sortValue !== "string") {
+      throw new Error("Cursor sort value must be a string or null");
+    }
+
+    return {
+      sortField: parsed.sortField,
+      sortValue: parsed.sortValue ?? null,
+      id: parsed.id,
+    } satisfies NpcListCursorPayload;
+  } catch (error) {
+    throw new NpcServiceError("NPC_FETCH_FAILED", {
+      cause: error,
+    });
+  }
+}
+
+function encodeFilterValue(value: string): string {
+  return encodeURIComponent(value);
+}
+
+function getSortFieldValue(row: RawNpcListRow, sortField: SortField): string | null {
+  switch (sortField) {
+    case "published_at":
+      return row.published_at;
+    case "updated_at":
+      return row.updated_at;
+    case "created_at":
+      return row.created_at;
+    default:
+      return null;
+  }
+}
+
+function mapToNpcListItem(row: RawNpcListRow): NpcListItemDto {
+  if (!row.owner) {
+    throw new NpcServiceError("NPC_FETCH_FAILED", {
+      cause: new Error("Owner information is missing for NPC record"),
+    });
+  }
+
+  const modules: NpcListModulesDto = {
+    shopEnabled: row.shop_enabled,
+    keywordsEnabled: row.keywords_enabled,
+  };
+
+  return {
+    id: row.id,
+    name: row.name,
+    owner: {
+      id: row.owner.id,
+      displayName: row.owner.display_name,
+    } satisfies NpcOwnerSummaryDto,
+    status: row.status,
+    modules,
+    publishedAt: row.published_at,
+    updatedAt: row.updated_at,
+    contentSizeBytes: row.content_size_bytes,
+  } satisfies NpcListItemDto;
+}
+
+function isSortField(value: unknown): value is SortField {
+  return typeof value === "string" && (ALLOWED_SORT_FIELDS as readonly string[]).includes(value);
 }
 
 function mapLook(
