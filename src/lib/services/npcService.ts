@@ -12,17 +12,20 @@ import type {
   NpcDetailResponseDto,
   NpcListItemDto,
   NpcListModulesDto,
+  NpcListVisibilityFilter,
   NpcLookDto,
   NpcMessagesDto,
   NpcModulesDto,
   NpcOwnerSummaryDto,
   NpcStatsDto,
-  NpcListVisibilityFilter,
+  UpdateNpcCommand,
+  UpdateNpcResponseDto,
 } from "../../types";
 
 type NpcInsert = Database["public"]["Tables"]["npcs"]["Insert"];
 type NpcRow = Database["public"]["Tables"]["npcs"]["Row"];
 type NpcStatus = Database["public"]["Enums"]["npc_status"];
+type NpcUpdate = Database["public"]["Tables"]["npcs"]["Update"];
 
 export interface CreateNpcServiceResult {
   npc: Pick<NpcRow, "id" | "status" | "owner_id" | "created_at" | "updated_at">;
@@ -35,6 +38,7 @@ export type NpcServiceErrorCode =
   | "NPC_FETCH_FAILED"
   | "NPC_ACCESS_FORBIDDEN"
   | "NPC_NOT_FOUND"
+  | "NPC_UPDATE_FAILED"
   | "XML_FETCH_FAILED"
   | "XML_NOT_FOUND"
   | "LUA_READ_FAILED"
@@ -210,6 +214,84 @@ export class NpcService {
       npc: data,
       created: true,
     };
+  }
+
+  async updateNpc(npcId: string, command: UpdateNpcCommand, ownerId: string): Promise<UpdateNpcResponseDto> {
+    if (!ownerId) {
+      throw new NpcServiceError("NPC_UPDATE_FAILED", {
+        cause: new Error("Missing owner identifier"),
+      });
+    }
+
+    const updatePayload = mapToNpcUpdate(command);
+
+    if (Object.keys(updatePayload).length === 0) {
+      throw new NpcServiceError("NPC_UPDATE_FAILED", {
+        cause: new Error("No fields to update"),
+      });
+    }
+
+    const { data, error } = await this.supabase
+      .from("npcs")
+      .update(updatePayload)
+      .eq("id", npcId)
+      .eq("owner_id", ownerId)
+      .select(
+        `
+          id,
+          name,
+          status,
+          published_at,
+          updated_at,
+          content_size_bytes,
+          shop_enabled,
+          keywords_enabled,
+          owner:profiles!npcs_owner_id_fkey (
+            id,
+            display_name
+          )
+        `
+      )
+      .maybeSingle();
+
+    if (error) {
+      if (isForbiddenSupabaseError(error)) {
+        throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", { cause: error });
+      }
+
+      console.error("NpcService.updateNpc", error);
+      throw new NpcServiceError("NPC_UPDATE_FAILED", { cause: error });
+    }
+
+    if (!data) {
+      throw new NpcServiceError("NPC_NOT_FOUND", {
+        cause: new Error("NPC update returned no rows"),
+      });
+    }
+
+    const owner = data.owner;
+    if (!owner) {
+      throw new NpcServiceError("NPC_UPDATE_FAILED", {
+        cause: new Error("Owner data missing after update"),
+      });
+    }
+
+    return {
+      id: data.id,
+      name: data.name,
+      owner: {
+        id: owner.id,
+        displayName: owner.display_name,
+      },
+      status: data.status,
+      modules: {
+        shopEnabled: data.shop_enabled,
+        keywordsEnabled: data.keywords_enabled,
+      },
+      publishedAt: data.published_at,
+      updatedAt: data.updated_at,
+      contentSizeBytes: data.content_size_bytes,
+    } satisfies UpdateNpcResponseDto;
   }
 
   private async findByClientRequestId(
@@ -674,6 +756,136 @@ function mapToNpcListItem(row: RawNpcListRow): NpcListItemDto {
     updatedAt: row.updated_at,
     contentSizeBytes: row.content_size_bytes,
   } satisfies NpcListItemDto;
+}
+
+function mapToNpcUpdate(command: UpdateNpcCommand): NpcUpdate {
+  const update: NpcUpdate = {};
+
+  if (command.clientRequestId !== undefined) {
+    update.client_request_id = command.clientRequestId ?? null;
+  }
+
+  if (command.name !== undefined) {
+    update.name = command.name ?? null;
+  }
+
+  if (command.contentSizeBytes !== undefined) {
+    update.content_size_bytes = command.contentSizeBytes ?? null;
+  }
+
+  if (command.look) {
+    const look = command.look;
+
+    if (look.type !== undefined) {
+      update.look_type = look.type ?? null;
+    }
+
+    if (look.typeId !== undefined) {
+      update.look_type_id = look.typeId ?? null;
+    }
+
+    if (look.itemId !== undefined) {
+      update.look_item_id = look.itemId ?? null;
+    }
+
+    if (look.head !== undefined) {
+      update.look_head = look.head ?? null;
+    }
+
+    if (look.body !== undefined) {
+      update.look_body = look.body ?? null;
+    }
+
+    if (look.legs !== undefined) {
+      update.look_legs = look.legs ?? null;
+    }
+
+    if (look.feet !== undefined) {
+      update.look_feet = look.feet ?? null;
+    }
+
+    if (look.addons !== undefined) {
+      update.look_addons = look.addons ?? null;
+    }
+
+    if (look.mount !== undefined) {
+      update.look_mount = look.mount ?? null;
+    }
+  }
+
+  if (command.stats) {
+    const stats = command.stats;
+
+    if (stats.healthNow !== undefined) {
+      update.health_now = stats.healthNow ?? null;
+    }
+
+    if (stats.healthMax !== undefined) {
+      update.health_max = stats.healthMax ?? null;
+    }
+
+    if (stats.walkInterval !== undefined) {
+      update.walk_interval = stats.walkInterval ?? null;
+    }
+
+    if (stats.floorChange !== undefined) {
+      update.floor_change = stats.floorChange ?? null;
+    }
+  }
+
+  if (command.messages) {
+    const messages = command.messages;
+
+    if (messages.greet !== undefined) {
+      update.greet_message = messages.greet ?? null;
+    }
+
+    if (messages.farewell !== undefined) {
+      update.farewell_message = messages.farewell ?? null;
+    }
+
+    if (messages.decline !== undefined) {
+      update.decline_message = messages.decline ?? null;
+    }
+
+    if (messages.noShop !== undefined) {
+      update.no_shop_message = messages.noShop ?? null;
+    }
+
+    if (messages.onCloseShop !== undefined) {
+      update.on_close_shop_message = messages.onCloseShop ?? null;
+    }
+  }
+
+  if (command.modules) {
+    const modules = command.modules;
+
+    if (modules.focusEnabled !== undefined) {
+      update.focus_enabled = modules.focusEnabled ?? null;
+    }
+
+    if (modules.travelEnabled !== undefined) {
+      update.travel_enabled = modules.travelEnabled ?? null;
+    }
+
+    if (modules.voiceEnabled !== undefined) {
+      update.voice_enabled = modules.voiceEnabled ?? null;
+    }
+
+    if (modules.shopEnabled !== undefined) {
+      update.shop_enabled = modules.shopEnabled ?? null;
+    }
+
+    if (modules.shopMode !== undefined) {
+      update.shop_mode = modules.shopMode ?? null;
+    }
+
+    if (modules.keywordsEnabled !== undefined) {
+      update.keywords_enabled = modules.keywordsEnabled ?? null;
+    }
+  }
+
+  return update;
 }
 
 function isSortField(value: unknown): value is SortField {

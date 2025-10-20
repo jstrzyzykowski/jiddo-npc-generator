@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { z } from "zod";
 
 import { NpcService, NpcServiceError } from "../../../lib/services/npcService";
+import { parseUpdateNpcCommand } from "../../../lib/validators/npcValidators";
 
 export const prerender = false;
 
@@ -35,6 +36,7 @@ type ErrorCode =
   | "SUPABASE_NOT_INITIALIZED"
   | "INVALID_PATH_PARAMETERS"
   | "INVALID_QUERY_PARAMETERS"
+  | "INVALID_BODY"
   | "UNAUTHORIZED"
   | "NPC_NOT_FOUND"
   | "NPC_ACCESS_FORBIDDEN"
@@ -55,6 +57,10 @@ const ERROR_DETAILS: Record<ErrorCode, { status: number; message: string }> = {
   INVALID_QUERY_PARAMETERS: {
     status: 400,
     message: "Query parameters are invalid.",
+  },
+  INVALID_BODY: {
+    status: 400,
+    message: "Request body is invalid.",
   },
   UNAUTHORIZED: {
     status: 401,
@@ -135,11 +141,80 @@ export const GET: APIRoute = async ({ locals, params, request }) => {
   }
 };
 
+export const PATCH: APIRoute = async ({ locals, params, request }) => {
+  const supabase = locals.supabase;
+  const session = locals.session;
+
+  if (!supabase) {
+    return createErrorResponse("SUPABASE_NOT_INITIALIZED");
+  }
+
+  if (!session?.user?.id) {
+    return createErrorResponse("UNAUTHORIZED");
+  }
+
+  const paramsValidation = npcIdParamSchema.safeParse(params);
+  if (!paramsValidation.success) {
+    return createZodErrorResponse("INVALID_PATH_PARAMETERS", paramsValidation.error);
+  }
+
+  let payload: unknown;
+  try {
+    payload = await request.json();
+  } catch (error) {
+    return createErrorResponse("INVALID_BODY", {
+      cause: error,
+      details: {
+        message: "Request body must be valid JSON.",
+      },
+    });
+  }
+
+  const bodyValidation = parseUpdateNpcCommandSafe(payload);
+  if (!bodyValidation.success) {
+    return createZodErrorResponse("INVALID_BODY", bodyValidation.error);
+  }
+
+  const npcService = new NpcService(supabase);
+  const { npcId } = paramsValidation.data;
+  const command = bodyValidation.data;
+
+  try {
+    const result = await npcService.updateNpc(npcId, command, session.user.id);
+
+    return new Response(JSON.stringify(result), {
+      status: 200,
+      headers: JSON_HEADERS,
+    });
+  } catch (error) {
+    if (error instanceof NpcServiceError && error.code in ERROR_DETAILS) {
+      return createErrorResponse(error.code as ErrorCode, { cause: error });
+    }
+
+    return createErrorResponse("INTERNAL_SERVER_ERROR", { cause: error });
+  }
+};
+
+function parseUpdateNpcCommandSafe(
+  payload: unknown
+): { success: true; data: ReturnType<typeof parseUpdateNpcCommand> } | { success: false; error: z.ZodError } {
+  try {
+    const data = parseUpdateNpcCommand(payload);
+    return { success: true, data };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error };
+    }
+
+    throw error;
+  }
+}
+
 function createErrorResponse(code: ErrorCode, options?: { details?: unknown; cause?: unknown }): Response {
   const { status, message } = ERROR_DETAILS[code];
 
   if (options?.cause) {
-    console.error(`GET /npcs/:npcId ${code}`, options.cause);
+    console.error(`/api/npcs/:npcId ${code}`, options.cause);
   }
 
   return new Response(
@@ -158,7 +233,7 @@ function createErrorResponse(code: ErrorCode, options?: { details?: unknown; cau
 }
 
 function createZodErrorResponse(
-  code: Extract<ErrorCode, "INVALID_PATH_PARAMETERS" | "INVALID_QUERY_PARAMETERS">,
+  code: Extract<ErrorCode, "INVALID_PATH_PARAMETERS" | "INVALID_QUERY_PARAMETERS" | "INVALID_BODY">,
   error: z.ZodError
 ): Response {
   const flattened = error.flatten();

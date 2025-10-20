@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { CreateNpcCommand, GetNpcListQueryDto } from "../../types";
+import type { CreateNpcCommand, GetNpcListQueryDto, UpdateNpcCommand } from "../../types";
 const CURSOR_MAX_LENGTH = 1024;
 const SEARCH_MAX_LENGTH = 255;
 const LIMIT_DEFAULT = 20;
@@ -113,7 +113,7 @@ const WALK_INTERVAL_MAX = 65535;
 const CONTENT_SIZE_MIN = 0;
 const CONTENT_SIZE_MAX = 262_144;
 
-const npcLookSchema = z
+const npcLookBaseSchema = z
   .object({
     type: z.enum(["player", "monster", "item"]),
     typeId: z.number().int().positive().nullable(),
@@ -125,98 +125,182 @@ const npcLookSchema = z
     addons: z.number().int().min(LOOK_ADDONS_MIN).max(LOOK_ADDONS_MAX).nullable(),
     mount: z.number().int().min(0).nullable(),
   })
-  .strict()
-  .superRefine((value, ctx) => {
-    if (value.type === "player" || value.type === "monster") {
-      if (value.typeId === null) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["typeId"],
-          message: "typeId is required for player and monster looks.",
-        });
-      }
+  .strict();
 
-      const equipmentFields: [keyof typeof value, number | null][] = [
-        ["head", value.head],
-        ["body", value.body],
-        ["legs", value.legs],
-        ["feet", value.feet],
-        ["addons", value.addons],
-      ];
+const equipmentFieldNames = ["head", "body", "legs", "feet", "addons"] as const;
 
-      for (const [field, fieldValue] of equipmentFields) {
-        if (fieldValue === null) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: [field],
-            message: `${field} must be provided for player looks.`,
-          });
-        }
-      }
-    } else {
-      if (value.typeId !== null && value.typeId <= 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["typeId"],
-          message: "typeId must be positive when provided.",
-        });
-      }
+function hasDefinedProperties(record: Record<string, unknown> | null | undefined): boolean {
+  if (!record) {
+    return false;
+  }
 
-      const equipmentFields: [keyof typeof value, number | null][] = [
-        ["head", value.head],
-        ["body", value.body],
-        ["legs", value.legs],
-        ["feet", value.feet],
-        ["addons", value.addons],
-      ];
+  return Object.values(record).some((value) => value !== undefined);
+}
 
-      for (const [field, fieldValue] of equipmentFields) {
-        if (fieldValue !== null) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: [field],
-            message: `${field} must be null for non-player looks.`,
-          });
-        }
-      }
+function validateNpcLook(
+  value: Partial<z.infer<typeof npcLookBaseSchema>>,
+  ctx: z.RefinementCtx,
+  { partial }: { partial: boolean }
+): void {
+  const type = value.type;
+
+  const otherLookValues = [
+    value.typeId,
+    value.itemId,
+    value.mount,
+    ...equipmentFieldNames.map((field) => value[field]),
+  ];
+
+  if (partial && type === undefined) {
+    const hasOtherFields = otherLookValues.some((field) => field !== undefined);
+
+    if (hasOtherFields) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["type"],
+        message: "type is required when updating look properties.",
+      });
     }
 
-    if (value.type === "item") {
-      if (value.itemId === null) {
+    return;
+  }
+
+  if (!type) {
+    return;
+  }
+
+  if (type === "player" || type === "monster") {
+    if (value.typeId === null || value.typeId === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["typeId"],
+        message: "typeId is required for player and monster looks.",
+      });
+    }
+
+    for (const fieldName of equipmentFieldNames) {
+      const fieldValue = value[fieldName];
+      if (!partial && fieldValue === null) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ["itemId"],
-          message: "itemId is required for item looks.",
+          path: [fieldName],
+          message: `${fieldName} must be provided for player looks.`,
         });
       }
-    } else if (value.itemId !== null) {
+
+      if (partial && fieldValue === null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [fieldName],
+          message: `${fieldName} cannot be null for player looks.`,
+        });
+      }
+
+      if (!partial && fieldValue === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [fieldName],
+          message: `${fieldName} must be provided for player looks.`,
+        });
+      }
+    }
+  } else {
+    if (value.typeId !== null && value.typeId !== undefined && value.typeId <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["typeId"],
+        message: "typeId must be positive when provided.",
+      });
+    }
+
+    for (const fieldName of equipmentFieldNames) {
+      const fieldValue = value[fieldName];
+      if (fieldValue !== null && fieldValue !== undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [fieldName],
+          message: `${fieldName} must be null for non-player looks.`,
+        });
+      }
+    }
+  }
+
+  if (type === "item") {
+    if (value.itemId === null || value.itemId === undefined) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["itemId"],
-        message: "itemId must be null unless the look type is item.",
+        message: "itemId is required for item looks.",
       });
     }
-  });
+  } else if (value.itemId !== null && value.itemId !== undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["itemId"],
+      message: "itemId must be null unless the look type is item.",
+    });
+  }
+}
 
-const npcStatsSchema = z
+const npcLookSchema = npcLookBaseSchema.superRefine((value, ctx) => {
+  validateNpcLook(value, ctx, { partial: false });
+});
+
+const updateNpcLookSchema = npcLookBaseSchema.partial().superRefine((value, ctx) => {
+  if (!hasDefinedProperties(value)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "At least one look field must be provided when updating look.",
+      path: [],
+    });
+    return;
+  }
+
+  validateNpcLook(value, ctx, { partial: true });
+});
+
+const npcStatsBaseSchema = z
   .object({
     healthNow: z.number().int().min(HEALTH_MIN).max(HEALTH_MAX),
     healthMax: z.number().int().min(1).max(HEALTH_MAX),
     walkInterval: z.number().int().min(WALK_INTERVAL_MIN).max(WALK_INTERVAL_MAX),
     floorChange: z.boolean(),
   })
-  .strict()
-  .superRefine((value, ctx) => {
-    if (value.healthMax < value.healthNow) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["healthMax"],
-        message: "healthMax must be greater than or equal to healthNow.",
-      });
-    }
-  });
+  .strict();
 
-const npcMessagesSchema = z
+const npcStatsSchema = npcStatsBaseSchema.superRefine((value, ctx) => {
+  if (value.healthMax < value.healthNow) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["healthMax"],
+      message: "healthMax must be greater than or equal to healthNow.",
+    });
+  }
+});
+
+const updateNpcStatsSchema = npcStatsBaseSchema.partial().superRefine((value, ctx) => {
+  if (!hasDefinedProperties(value)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "At least one stats field must be provided when updating stats.",
+      path: [],
+    });
+    return;
+  }
+
+  const healthNow = value.healthNow;
+  const healthMax = value.healthMax;
+
+  if (typeof healthNow === "number" && typeof healthMax === "number" && healthMax < healthNow) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["healthMax"],
+      message: "healthMax must be greater than or equal to healthNow.",
+    });
+  }
+});
+
+const npcMessagesBaseSchema = z
   .object({
     greet: z.string().trim().min(1).max(NPC_MESSAGE_MAX_LENGTH),
     farewell: z.string().trim().min(1).max(NPC_MESSAGE_MAX_LENGTH),
@@ -226,7 +310,18 @@ const npcMessagesSchema = z
   })
   .strict();
 
-const npcModulesSchema = z
+const npcMessagesSchema = npcMessagesBaseSchema;
+const updateNpcMessagesSchema = npcMessagesBaseSchema.partial().superRefine((value, ctx) => {
+  if (!hasDefinedProperties(value)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "At least one message field must be provided when updating messages.",
+      path: [],
+    });
+  }
+});
+
+const npcModulesBaseSchema = z
   .object({
     focusEnabled: z.boolean(),
     travelEnabled: z.boolean(),
@@ -236,6 +331,17 @@ const npcModulesSchema = z
     keywordsEnabled: z.boolean(),
   })
   .strict();
+
+const npcModulesSchema = npcModulesBaseSchema;
+const updateNpcModulesSchema = npcModulesBaseSchema.partial().superRefine((value, ctx) => {
+  if (!hasDefinedProperties(value)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "At least one module field must be provided when updating modules.",
+      path: [],
+    });
+  }
+});
 
 export const createNpcCommandSchema: z.ZodType<CreateNpcCommand> = z
   .object({
@@ -264,3 +370,51 @@ type _CreateNpcCommandTypeCheck = [CreateNpcCommandResult] extends [CreateNpcCom
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type _EnsureCreateNpcCommandMatches = _CreateNpcCommandTypeCheck;
+
+const updateNpcCommandSchema: z.ZodType<UpdateNpcCommand> = z
+  .object({
+    clientRequestId: z.string().uuid().optional(),
+    name: z.string().trim().min(1).max(NPC_NAME_MAX_LENGTH).optional(),
+    look: updateNpcLookSchema.optional(),
+    stats: updateNpcStatsSchema.optional(),
+    messages: updateNpcMessagesSchema.optional(),
+    modules: updateNpcModulesSchema.optional(),
+    contentSizeBytes: z.number().int().min(CONTENT_SIZE_MIN).max(CONTENT_SIZE_MAX).optional(),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "At least one field must be provided for update.",
+  })
+  .superRefine((value, ctx) => {
+    const stats = value.stats;
+    if (!stats) {
+      return;
+    }
+
+    const healthNow = stats.healthNow;
+    const healthMax = stats.healthMax;
+
+    if (typeof healthNow === "number" && typeof healthMax === "number" && healthMax < healthNow) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["stats", "healthMax"],
+        message: "healthMax must be greater than or equal to healthNow.",
+      });
+    }
+  });
+
+export type UpdateNpcCommandInput = z.input<typeof updateNpcCommandSchema>;
+export type UpdateNpcCommandResult = z.infer<typeof updateNpcCommandSchema>;
+
+export function parseUpdateNpcCommand(payload: unknown): UpdateNpcCommand {
+  return updateNpcCommandSchema.parse(payload);
+}
+
+type _UpdateNpcCommandTypeCheck = [UpdateNpcCommandResult] extends [UpdateNpcCommand]
+  ? [UpdateNpcCommand] extends [UpdateNpcCommandResult]
+    ? true
+    : never
+  : never;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type _EnsureUpdateNpcCommandMatches = _UpdateNpcCommandTypeCheck;
