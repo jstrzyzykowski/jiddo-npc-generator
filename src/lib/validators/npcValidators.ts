@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { CreateNpcCommand, GetNpcListQueryDto, UpdateNpcCommand } from "../../types";
+import type { CreateNpcCommand, DeleteNpcQueryDto, GetNpcListQueryDto, UpdateNpcCommand } from "../../types";
 const CURSOR_MAX_LENGTH = 1024;
 const SEARCH_MAX_LENGTH = 255;
 const LIMIT_DEFAULT = 20;
@@ -418,3 +418,34 @@ type _UpdateNpcCommandTypeCheck = [UpdateNpcCommandResult] extends [UpdateNpcCom
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type _EnsureUpdateNpcCommandMatches = _UpdateNpcCommandTypeCheck;
+
+export const deleteNpcValidator = z
+  .object({
+    npcId: z.string().uuid(),
+    reason: z
+      .preprocess((value) => {
+        if (typeof value !== "string") {
+          return value;
+        }
+
+        const trimmed = value.trim();
+        return trimmed.length === 0 ? undefined : trimmed;
+      }, z.string().max(255))
+      .optional(),
+  })
+  .strict();
+
+export type DeleteNpcValidatorInput = z.input<typeof deleteNpcValidator>;
+export type DeleteNpcValidatorResult = z.output<typeof deleteNpcValidator>;
+
+export function validateDeleteNpcParams(payload: unknown): DeleteNpcQueryDto & { npcId: string } {
+  const result = deleteNpcValidator.parse(payload);
+
+  const normalizedReason =
+    typeof result.reason === "string" && result.reason.trim().length > 0 ? result.reason : undefined;
+
+  return {
+    npcId: result.npcId,
+    reason: normalizedReason,
+  } satisfies DeleteNpcQueryDto & { npcId: string };
+}

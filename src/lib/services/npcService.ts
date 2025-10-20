@@ -7,6 +7,7 @@ import type { SupabaseClient } from "../../db/supabase.client";
 import type { Database } from "../../db/database.types";
 import type {
   CreateNpcCommand,
+  DeleteNpcResponseDto,
   GetNpcListQueryDto,
   GetNpcListResponseDto,
   NpcDetailResponseDto,
@@ -21,6 +22,7 @@ import type {
   UpdateNpcCommand,
   UpdateNpcResponseDto,
 } from "../../types";
+import { createEvent as createTelemetryEvent, TelemetryServiceError } from "./telemetryService";
 
 type NpcInsert = Database["public"]["Tables"]["npcs"]["Insert"];
 type NpcRow = Database["public"]["Tables"]["npcs"]["Row"];
@@ -39,6 +41,8 @@ export type NpcServiceErrorCode =
   | "NPC_ACCESS_FORBIDDEN"
   | "NPC_NOT_FOUND"
   | "NPC_UPDATE_FAILED"
+  | "NPC_DELETE_FAILED"
+  | "NPC_ALREADY_DELETED"
   | "XML_FETCH_FAILED"
   | "XML_NOT_FOUND"
   | "LUA_READ_FAILED"
@@ -292,6 +296,88 @@ export class NpcService {
       updatedAt: data.updated_at,
       contentSizeBytes: data.content_size_bytes,
     } satisfies UpdateNpcResponseDto;
+  }
+
+  async softDeleteNpc({
+    npcId,
+    userId,
+    reason,
+  }: {
+    npcId: string;
+    userId: string;
+    reason?: string;
+  }): Promise<DeleteNpcResponseDto> {
+    if (!userId) {
+      throw new NpcServiceError("NPC_DELETE_FAILED", {
+        cause: new Error("Missing owner identifier"),
+      });
+    }
+
+    const now = new Date().toISOString();
+
+    const { data, error } = await this.supabase
+      .from("npcs")
+      .select("id, deleted_at")
+      .eq("id", npcId)
+      .eq("owner_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      if (isForbiddenSupabaseError(error)) {
+        throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", { cause: error });
+      }
+
+      console.error("NpcService.softDeleteNpc fetch", error);
+      throw new NpcServiceError("NPC_DELETE_FAILED", { cause: error });
+    }
+
+    if (!data) {
+      throw new NpcServiceError("NPC_NOT_FOUND", {
+        cause: new Error("NPC soft delete fetch returned no rows"),
+      });
+    }
+
+    if (data.deleted_at) {
+      throw new NpcServiceError("NPC_ALREADY_DELETED", {
+        cause: new Error("NPC was already soft deleted"),
+      });
+    }
+
+    const { error: updateError } = await this.supabase.from("npcs").update({ deleted_at: now }).eq("id", npcId);
+
+    if (updateError) {
+      if (isForbiddenSupabaseError(updateError)) {
+        throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", { cause: updateError });
+      }
+
+      console.error("NpcService.softDeleteNpc update", updateError);
+      throw new NpcServiceError("NPC_DELETE_FAILED", { cause: updateError });
+    }
+
+    if (reason) {
+      try {
+        await createTelemetryEvent({
+          supabase: this.supabase,
+          event: {
+            eventType: "NPC_DELETED",
+            npcId,
+            userId,
+            metadata: { reason },
+          },
+        });
+      } catch (telemetryError) {
+        if (telemetryError instanceof TelemetryServiceError) {
+          console.error("NpcService.softDeleteNpc telemetry", telemetryError);
+        } else {
+          console.error("NpcService.softDeleteNpc telemetry unexpected", telemetryError);
+        }
+      }
+    }
+
+    return {
+      id: data.id,
+      deletedAt: now,
+    } satisfies DeleteNpcResponseDto;
   }
 
   private async findByClientRequestId(

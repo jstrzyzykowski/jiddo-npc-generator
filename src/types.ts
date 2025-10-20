@@ -330,7 +330,7 @@ export interface DeleteNpcKeywordPhraseResponseDto {
   deletedAt: NonNullable<NpcKeywordPhraseRow["deleted_at"]>;
 }
 
-export type TelemetryEventType = "NPC_CREATED" | "NPC_PUBLISHED" | "AI_ERROR";
+export type TelemetryEventType = "NPC_CREATED" | "NPC_PUBLISHED" | "AI_ERROR" | "NPC_DELETED";
 
 export interface CreateTelemetryEventCommand {
   eventType: TelemetryEventType;
