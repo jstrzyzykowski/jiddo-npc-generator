@@ -10,6 +10,7 @@ import type {
   DeleteNpcResponseDto,
   GetNpcListQueryDto,
   GetNpcListResponseDto,
+  PublishNpcResponseDto,
   NpcDetailResponseDto,
   NpcListItemDto,
   NpcListModulesDto,
@@ -43,6 +44,9 @@ export type NpcServiceErrorCode =
   | "NPC_UPDATE_FAILED"
   | "NPC_DELETE_FAILED"
   | "NPC_ALREADY_DELETED"
+  | "NPC_ALREADY_PUBLISHED"
+  | "NPC_PUBLISH_FAILED"
+  | "NPC_PUBLISH_CONFLICT"
   | "XML_FETCH_FAILED"
   | "XML_NOT_FOUND"
   | "LUA_READ_FAILED"
@@ -378,6 +382,113 @@ export class NpcService {
       id: data.id,
       deletedAt: now,
     } satisfies DeleteNpcResponseDto;
+  }
+
+  async publishNpc(npcId: string, ownerId: string): Promise<PublishNpcResponseDto> {
+    if (!ownerId) {
+      throw new NpcServiceError("NPC_PUBLISH_FAILED", {
+        cause: new Error("Missing owner identifier"),
+      });
+    }
+
+    const { data: npc, error: fetchError } = await this.supabase
+      .from("npcs")
+      .select("id, owner_id, status")
+      .eq("id", npcId)
+      .limit(1)
+      .maybeSingle();
+
+    if (fetchError) {
+      if (isForbiddenSupabaseError(fetchError)) {
+        throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", { cause: fetchError });
+      }
+
+      console.error("NpcService.publishNpc fetch", fetchError);
+      throw new NpcServiceError("NPC_FETCH_FAILED", { cause: fetchError });
+    }
+
+    if (!npc) {
+      throw new NpcServiceError("NPC_NOT_FOUND", {
+        cause: new Error("NPC not found for publish"),
+      });
+    }
+
+    if (npc.owner_id !== ownerId) {
+      throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", {
+        cause: new Error("NPC does not belong to user"),
+      });
+    }
+
+    if (npc.status !== "draft") {
+      throw new NpcServiceError("NPC_ALREADY_PUBLISHED", {
+        cause: new Error("NPC status is not draft"),
+      });
+    }
+
+    const { data: updatedNpc, error: updateError } = await this.supabase
+      .from("npcs")
+      .update({ status: "published" })
+      .eq("id", npcId)
+      .eq("owner_id", ownerId)
+      .eq("status", "draft")
+      .select("id, status, published_at, first_published_at")
+      .limit(1)
+      .maybeSingle();
+
+    if (updateError) {
+      if (isForbiddenSupabaseError(updateError)) {
+        throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", { cause: updateError });
+      }
+
+      if (isPublishConflictError(updateError)) {
+        throw new NpcServiceError("NPC_PUBLISH_CONFLICT", { cause: updateError });
+      }
+
+      console.error("NpcService.publishNpc update", updateError);
+      throw new NpcServiceError("NPC_PUBLISH_FAILED", { cause: updateError });
+    }
+
+    if (!updatedNpc) {
+      throw new NpcServiceError("NPC_PUBLISH_FAILED", {
+        cause: new Error("Publish update returned no data"),
+      });
+    }
+
+    if (updatedNpc.status !== "published") {
+      throw new NpcServiceError("NPC_PUBLISH_FAILED", {
+        cause: new Error(`Unexpected NPC status after publish: ${updatedNpc.status}`),
+      });
+    }
+
+    if (!updatedNpc.published_at) {
+      throw new NpcServiceError("NPC_PUBLISH_FAILED", {
+        cause: new Error("NPC published_at is missing after publish"),
+      });
+    }
+
+    try {
+      await createTelemetryEvent({
+        supabase: this.supabase,
+        event: {
+          eventType: "NPC_PUBLISHED",
+          npcId: updatedNpc.id,
+          userId: ownerId,
+        },
+      });
+    } catch (error) {
+      if (error instanceof TelemetryServiceError) {
+        console.error("NpcService.publishNpc telemetry", error);
+      } else {
+        console.error("NpcService.publishNpc telemetry unexpected", error);
+      }
+    }
+
+    return {
+      id: updatedNpc.id,
+      status: "published",
+      publishedAt: updatedNpc.published_at,
+      firstPublishedAt: updatedNpc.first_published_at,
+    } satisfies PublishNpcResponseDto;
   }
 
   private async findByClientRequestId(
@@ -1100,6 +1211,28 @@ function isDuplicateClientRequestError(error: unknown): boolean {
   }
 
   if (typeof candidate.message === "string" && candidate.message.toLowerCase().includes("duplicate")) {
+    return true;
+  }
+
+  return false;
+}
+
+function isPublishConflictError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const candidate = error as { code?: string; message?: string; details?: string };
+
+  if (typeof candidate.code === "string" && ["23514", "23502", "23505"].includes(candidate.code)) {
+    return true;
+  }
+
+  if (typeof candidate.message === "string" && candidate.message.toLowerCase().includes("constraint")) {
+    return true;
+  }
+
+  if (typeof candidate.details === "string" && candidate.details.toLowerCase().includes("constraint")) {
     return true;
   }
 
