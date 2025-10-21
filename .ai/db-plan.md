@@ -112,8 +112,8 @@
 4. Zasady PostgreSQL (RLS)
 
 - `profiles`: `SELECT` dostępny publicznie (USING TRUE); `UPDATE` ograniczony do właściciela (`auth.uid() = id`); `INSERT` i `DELETE` zabronione; domyślna polityka odmowy włączona.
-- `npcs`: polityka odczytu publicznego (`status = 'published' AND deleted_at IS NULL`) dla gości; polityka odczytu/aktualizacji właściciela (`auth.uid() = owner_id AND deleted_at IS NULL`); polityka wstawiania wymagająca dopasowania `auth.uid()` do `owner_id`; polityka soft delete (aktualizacja `deleted_at`) tylko dla właściciela; brak dostępu do wierszy usuniętych (`deleted_at IS NULL` w USING).
-- `npc_shop_items`, `npc_keywords`, `npc_keyword_phrases`: polityki dziedziczące uprawnienia z nadrzędnego NPC (`EXISTS (SELECT 1 FROM npcs WHERE npcs.id = ... AND npcs.deleted_at IS NULL AND (npcs.status = 'published' OR npcs.owner_id = auth.uid()))`); operacje modyfikujące ograniczone do właściciela.
+- `npcs`: polityka odczytu publicznego (`status = 'published' AND deleted_at IS NULL`) dla gości; polityka odczytu/aktualizacji/wstawiania dla właściciela (`auth.uid() = owner_id`) niezależnie od `deleted_at`; soft delete (aktualizacja `deleted_at`) tylko dla właściciela; brak odrębnego dostępu dla osób trzecich do rekordów usuniętych.
+- `npc_shop_items`, `npc_keywords`, `npc_keyword_phrases`: polityki dziedziczące uprawnienia z nadrzędnego NPC (`EXISTS (SELECT 1 FROM npcs WHERE npcs.id = ... AND npcs.owner_id = auth.uid())`); lista publiczna (SELECT) nadal wymaga, aby nadrzędny NPC był opublikowany i nieusunięty, natomiast operacje modyfikujące są ograniczone do właściciela niezależnie od `deleted_at` (na potrzeby kaskadowego soft delete).
 - `telemetry_events`: odczyt ograniczony do personelu (np. rola z claim `role = 'service'`); wstawianie dozwolone dla zalogowanych użytkowników; aktualizacja i delete zablokowane.
 - Wszystkie tabele mają domyślną politykę odmowy (RLS ON + brak polityk → blokada), dlatego powyższe polityki muszą być zdefiniowane eksplicytnie.
 

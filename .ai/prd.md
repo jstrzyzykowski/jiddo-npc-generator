@@ -49,7 +49,7 @@ Ręczne tworzenie pary plików (XML + LUA) dla Jiddo jest czasochłonne, podatne
 - Publikacja (`Publish`) zmienia status na `published`, co ujawnia NPC publicznie. Brak funkcji `Unpublish` w MVP.
 - Edycja opublikowanego NPC wymaga potwierdzenia, a wynik jest widoczny publicznie natychmiast po zapisie.
 - Dostęp do danych jest chroniony na poziomie bazy danych (PostgreSQL) przez polityki Row-Level Security (RLS). Polityki te zapewniają, że tylko właściciel może modyfikować swoje zasoby.
-- Usunięcie NPC odbywa się poprzez mechanizm "soft delete" (ustawienie znacznika czasu `deleted_at`). Operacja ta jest kaskadowa i propaguje usunięcie na wszystkie powiązane dane (np. przedmioty w sklepie, słowa kluczowe). Fizyczne usunięcie rekordów jest zablokowane na poziomie RLS.
+- Usunięcie NPC odbywa się poprzez mechanizm "soft delete" (ustawienie znacznika czasu `deleted_at`). Operacja ta jest kaskadowa i propaguje usunięcie na wszystkie powiązane dane (np. przedmioty w sklepie, słowa kluczowe). Właściciel zachowuje możliwość podglądu usuniętych rekordów na potrzeby audytu (np. API może zwrócić `deletedAt`), a w tle zapisywane jest zdarzenie telemetryczne (`NPC_DELETED`) z opcjonalnym powodem. Fizyczne usunięcie rekordów jest zablokowane na poziomie RLS.
 
   3.3 Kreator NPC (Jiddo)
 
@@ -129,7 +129,7 @@ Ręczne tworzenie pary plików (XML + LUA) dla Jiddo jest czasochłonne, podatne
 
       3.10 Telemetria i obserwowalność
 
-- Zdarzenia: NPC Created, NPC Published.
+- Zdarzenia: NPC Created, NPC Published, NPC Deleted.
 - Metryki: TTFNPC (czas od wejścia do kreatora do pierwszego działającego NPC), konwersja Create→Publish, podstawowe wskaźniki błędów generacji.
 
 ## 4. Granice produktu
@@ -221,6 +221,7 @@ Kryteria akceptacji:
 - Soft delete ukrywa NPC z list publicznych i strony szczegółów publicznej.
 - Operacja jest kaskadowa: powiązane dane (przedmioty w sklepie, słowa kluczowe) są również oznaczane jako usunięte.
 - Właściciel nie widzi usuniętego NPC na swoich listach aktywnych.
+- System pozwala opcjonalnie podać powód usunięcia, wykorzystywany w audycie telemetrycznym.
 - Operacja nie ma opcji cofnięcia w MVP.
 
 US-009
@@ -318,7 +319,7 @@ Tytuł: Telemetria podstawowa
 Opis: Jako produktowca interesują mnie zdarzenia służące do mierzenia użycia i jakości.
 Kryteria akceptacji:
 
-- Wysyłane są zdarzenia: NPC Created, NPC Published.
+- Wysyłane są zdarzenia: NPC Created, NPC Published, NPC Deleted (z metadanymi powodu, jeśli podany).
 - Mierzony jest TTFNPC i konwersja Create→Publish.
 - Błędy generacji AI są rejestrowane z minimalnym kontekstem (bez PII).
 

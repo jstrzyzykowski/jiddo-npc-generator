@@ -300,7 +300,7 @@
 ```
 
 - **Success Codes**: `200 OK`
-- **Error Codes**: `401 Unauthorized`, `403 Forbidden`, `404 Not Found`.
+- **Error Codes**: `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `409 Conflict` (already deleted).
 
 ### 2.3 NPC Shop Items
 
@@ -512,7 +512,7 @@
 
 ```
 {
-  "eventType": "NPC_CREATED|NPC_PUBLISHED|AI_ERROR",
+  "eventType": "NPC_CREATED|NPC_PUBLISHED|AI_ERROR|NPC_DELETED",
   "userId": "uuid|null",
   "npcId": "uuid|null",
   "metadata": { "string": any }
@@ -578,7 +578,7 @@
 
 ### 4.5 Telemetry Logic
 
-- Emit telemetry events server-side: `NPC_CREATED` after successful draft creation, `NPC_PUBLISHED` on publish success, `AI_ERROR` on generation failure.
+- Emit telemetry events server-side: `NPC_CREATED` after successful draft creation, `NPC_PUBLISHED` on publish success, `NPC_DELETED` when owner soft deletes an NPC (metadata may include `reason`), `AI_ERROR` on generation failure.
 - Service-role endpoint validates payload size/type; RLS restricts reads/writes to service role.
 
 ### 4.6 Performance & Observability
