@@ -114,7 +114,7 @@
 - `profiles`: `SELECT` dostępny publicznie (USING TRUE); `UPDATE` ograniczony do właściciela (`auth.uid() = id`); `INSERT` i `DELETE` zabronione; domyślna polityka odmowy włączona.
 - `npcs`: polityka odczytu publicznego (`status = 'published' AND deleted_at IS NULL`) dla gości; polityka odczytu/aktualizacji/wstawiania dla właściciela (`auth.uid() = owner_id`) niezależnie od `deleted_at`; soft delete (aktualizacja `deleted_at`) tylko dla właściciela; brak odrębnego dostępu dla osób trzecich do rekordów usuniętych.
 - `npc_shop_items`, `npc_keywords`, `npc_keyword_phrases`: polityki dziedziczące uprawnienia z nadrzędnego NPC (`EXISTS (SELECT 1 FROM npcs WHERE npcs.id = ... AND npcs.owner_id = auth.uid())`); lista publiczna (SELECT) nadal wymaga, aby nadrzędny NPC był opublikowany i nieusunięty, natomiast operacje modyfikujące są ograniczone do właściciela niezależnie od `deleted_at` (na potrzeby kaskadowego soft delete).
-- `telemetry_events`: odczyt ograniczony do personelu (np. rola z claim `role = 'service'`); wstawianie dozwolone dla zalogowanych użytkowników; aktualizacja i delete zablokowane.
+- `telemetry_events`: odczyt ograniczony do personelu (rola `service_role`) oraz do właściciela zdarzenia (rola `authenticated`); wstawianie (`INSERT`) dozwolone dla zalogowanych użytkowników (`authenticated`) z warunkiem, że `user_id` rekordu jest zgodne z `auth.uid()` i ewentualny powiązany `npc_id` również należy do tego użytkownika; aktualizacja (`UPDATE`) i usuwanie (`DELETE`) zablokowane.
 - Wszystkie tabele mają domyślną politykę odmowy (RLS ON + brak polityk → blokada), dlatego powyższe polityki muszą być zdefiniowane eksplicytnie.
 
 5. Dodatkowe uwagi

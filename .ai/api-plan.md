@@ -579,7 +579,7 @@
 ### 4.5 Telemetry Logic
 
 - Emit telemetry events server-side: `NPC_CREATED` after successful draft creation, `NPC_PUBLISHED` on publish success, `NPC_DELETED` when owner soft deletes an NPC (metadata may include `reason`), `AI_ERROR` on generation failure.
-- Service-role endpoint validates payload size/type; RLS restricts reads/writes to service role.
+- User-initiated events (`NPC_CREATED`, `NPC_PUBLISHED`, `NPC_DELETED`) are recorded directly on the server-side within the user's session context. This requires RLS policies allowing `INSERT` operations for the `authenticated` role. The dedicated endpoint and `service_role` are reserved for system events that are not directly tied to a user action (e.g., `AI_ERROR`).
 
 ### 4.6 Performance & Observability
 
