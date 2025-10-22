@@ -1,10 +1,19 @@
 import { z } from "zod";
 
-import type { CreateNpcCommand, DeleteNpcQueryDto, GetNpcListQueryDto, UpdateNpcCommand } from "../../types";
+import type {
+  CreateNpcCommand,
+  DeleteNpcQueryDto,
+  GetFeaturedNpcsQueryDto,
+  GetNpcListQueryDto,
+  UpdateNpcCommand,
+} from "../../types";
 const CURSOR_MAX_LENGTH = 1024;
 const SEARCH_MAX_LENGTH = 255;
 const LIMIT_DEFAULT = 20;
 const LIMIT_MAX = 100;
+const FEATURED_LIMIT_MIN = 1;
+const FEATURED_LIMIT_MAX = 10;
+const FEATURED_LIMIT_DEFAULT = 10;
 
 const booleanQueryParam = z
   .preprocess((value) => {
@@ -49,6 +58,60 @@ const limitQueryParam = z
     return value;
   }, z.number().int().min(1).max(LIMIT_MAX))
   .optional();
+
+const featuredLimitQueryParam = z
+  .preprocess((value) => {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (typeof value === "number") {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed === "") {
+        return value;
+      }
+
+      const parsed = Number(trimmed);
+      if (!Number.isFinite(parsed)) {
+        return value;
+      }
+
+      return parsed;
+    }
+
+    return value;
+  }, z.number().int().min(FEATURED_LIMIT_MIN).max(FEATURED_LIMIT_MAX))
+  .optional();
+
+const getFeaturedNpcsQuerySchema = z
+  .object({
+    limit: featuredLimitQueryParam,
+  })
+  .strict();
+
+export type GetFeaturedNpcsQueryInput = z.input<typeof getFeaturedNpcsQuerySchema>;
+export type GetFeaturedNpcsQueryResult = z.output<typeof getFeaturedNpcsQuerySchema>;
+
+export function parseGetFeaturedNpcsQueryParams(params: URLSearchParams): GetFeaturedNpcsQueryDto {
+  const rawEntries = Object.fromEntries(params.entries());
+  const result = getFeaturedNpcsQuerySchema.safeParse(rawEntries);
+
+  if (!result.success) {
+    throw result.error;
+  }
+
+  const parsed = result.data;
+
+  const normalized: GetFeaturedNpcsQueryDto = {
+    limit: parsed.limit ?? FEATURED_LIMIT_DEFAULT,
+  };
+
+  return normalized;
+}
 
 const getNpcListQuerySchema = z
   .object({

@@ -8,6 +8,8 @@ import type { Database } from "../../db/database.types";
 import type {
   CreateNpcCommand,
   DeleteNpcResponseDto,
+  GetFeaturedNpcsQueryDto,
+  GetFeaturedNpcsResponseDto,
   GetNpcListQueryDto,
   GetNpcListResponseDto,
   PublishNpcResponseDto,
@@ -67,6 +69,9 @@ const DEFAULT_LUA_FILE_PATH = resolve("src", "assets", "lua", "default.lua");
 
 const DEFAULT_LIST_LIMIT = 20;
 const MAX_LIST_LIMIT = 100;
+const FEATURED_LIMIT_MIN = 1;
+const FEATURED_LIMIT_MAX = 10;
+const FEATURED_LIMIT_DEFAULT = 10;
 const ALLOWED_SORT_FIELDS = ["published_at", "updated_at", "created_at"] as const;
 const DEFAULT_SORT_FIELD = ALLOWED_SORT_FIELDS[0];
 const DEFAULT_SORT_ORDER = "desc" as const;
@@ -125,6 +130,36 @@ interface NpcListCursorPayload {
 }
 
 export class NpcService {
+  async getFeaturedNpcs(query: GetFeaturedNpcsQueryDto): Promise<GetFeaturedNpcsResponseDto> {
+    const limit = normalizeFeaturedLimit(query.limit);
+
+    const { data, error } = await this.supabase
+      .from("npcs")
+      .select<typeof NPC_LIST_SELECT, RawNpcListRow>(NPC_LIST_SELECT)
+      .eq("status", "published")
+      .is("deleted_at", null)
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .order("id", { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      if (isForbiddenSupabaseError(error)) {
+        throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", { cause: error });
+      }
+
+      console.error("NpcService.getFeaturedNpcs", error);
+      throw new NpcServiceError("NPC_FETCH_FAILED", { cause: error });
+    }
+
+    const rows = (data ?? []) as RawNpcListRow[];
+
+    const items = rows.map((row) => mapToNpcListItem(row));
+
+    return {
+      items,
+    } satisfies GetFeaturedNpcsResponseDto;
+  }
+
   async getNpcList(query: GetNpcListQueryDto, userId: string | null): Promise<GetNpcListResponseDto> {
     const normalizedQuery = normalizeNpcListQuery(query);
 
@@ -779,6 +814,24 @@ function normalizeNpcListQuery(query: GetNpcListQueryDto): NormalizedGetNpcListQ
     sort,
     order,
   } satisfies NormalizedGetNpcListQuery;
+}
+
+function normalizeFeaturedLimit(limit: number | undefined): number {
+  if (typeof limit !== "number" || !Number.isFinite(limit)) {
+    return FEATURED_LIMIT_DEFAULT;
+  }
+
+  const clamped = Math.floor(limit);
+
+  if (clamped < FEATURED_LIMIT_MIN) {
+    return FEATURED_LIMIT_MIN;
+  }
+
+  if (clamped > FEATURED_LIMIT_MAX) {
+    return FEATURED_LIMIT_MAX;
+  }
+
+  return clamped;
 }
 
 function requiresAuthentication(visibility: NpcListVisibilityFilter): boolean {
