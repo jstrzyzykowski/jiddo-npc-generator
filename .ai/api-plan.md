@@ -106,7 +106,7 @@
 
 - **Method**: `POST`
 - **Path**: `/npcs/{npcId}/generate`
-- **Description**: Kick off asynchronous XML generation using latest NPC parameters.
+- **Description**: Kick off asynchronous XML generation using latest NPC parameters. **MVP Mock Implementation**: This endpoint will simulate starting a generation job without calling an external AI service. It will return a job ID that can be used to poll for status.
 - **Query Params**: optional `force=true` to bypass cached XML when editing.
 - **Request JSON**:
 
@@ -129,13 +129,13 @@
 ```
 
 - **Success Codes**: `202 Accepted`
-- **Error Codes**: `400 Bad Request` (NPC missing required parameters), `401 Unauthorized`, `403 Forbidden` (not owner), `409 Conflict` (job already running), `413 Payload Too Large`, `422 Unprocessable Entity` (content >256KB), `429 Too Many Requests` (generation rate limit).
+- **Error Codes**: `400 Bad Request` (invalid request body), `401 Unauthorized`, `403 Forbidden` (user is not the owner of the NPC), `404 Not Found` (NPC with the given ID does not exist), `409 Conflict` (a generation job for this NPC is already in progress).
 
 #### 2.2.3 Generation Job Status
 
 - **Method**: `GET`
 - **Path**: `/npcs/{npcId}/generation-jobs/{jobId}`
-- **Description**: Poll job status; returns generated XML when completed.
+- **Description**: Poll job status; returns generated XML when completed. **MVP Mock Implementation**: This endpoint simulates job progress. After a short, artificial delay (e.g., 2-3 seconds), it will transition the job status to `succeeded` and return the content of a static mock file located at `src/assets/mocks/sample-npc.xml`.
 - **Query Params**: none.
 - **Response JSON**:
 
@@ -144,7 +144,7 @@
   "jobId": "uuid",
   "npcId": "uuid",
   "status": "queued|processing|succeeded|failed",
-  "xml": "string|null",
+  "xml": "string|null", // For MVP, returns content of a static mock file on success.
   "contentSizeBytes": integer|null,
   "error": {
     "code": "AI_TIMEOUT|AI_INVALID_XML|LIMIT_EXCEEDED",
@@ -475,115 +475,4 @@
 
 - **Response JSON**: updated keyword with phrase lists.
 - **Success Codes**: `200 OK`
-- **Error Codes**: `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `409 Conflict`, `413 Payload Too Large`, `422 Unprocessable Entity`.
-
-#### 2.4.4 Delete Keyword
-
-- **Method**: `DELETE`
-- **Path**: `/npcs/{npcId}/keywords/{keywordId}`
-- **Description**: Soft delete keyword and its phrases.
-- **Response JSON**: `{ "id": "uuid", "deletedAt": "ISO-8601" }`
-- **Success Codes**: `200 OK`
-- **Error Codes**: `401 Unauthorized`, `403 Forbidden`, `404 Not Found`.
-
-#### 2.4.5 Manage Keyword Phrases
-
-- **Method**: `POST`
-- **Path**: `/npc-keywords/{keywordId}/phrases`
-- **Description**: Add phrase to existing keyword (owner only).
-- **Request JSON**: `{ "phrase": "string" }`
-- **Response JSON**: `{ "id": "uuid", "phrase": "string" }`
-- **Success Codes**: `201 Created`
-- **Error Codes**: `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `409 Conflict`, `413 Payload Too Large`, `422 Unprocessable Entity`.
-
-- **Method**: `DELETE`
-- **Path**: `/npc-keywords/{keywordId}/phrases/{phraseId}`
-- **Description**: Soft delete phrase.
-- **Response JSON**: `{ "id": "uuid", "deletedAt": "ISO-8601" }`
-- **Success Codes**: `200 OK`
-- **Error Codes**: `401 Unauthorized`, `403 Forbidden`, `404 Not Found`.
-
-### 2.5 Telemetry (Service Role)
-
-- **Method**: `POST`
-- **Path**: `/telemetry/events`
-- **Description**: Internal endpoint used by trusted services to record events (NPC Created/Published failures). Requires service key.
-- **Request JSON**:
-
-```
-{
-  "eventType": "NPC_CREATED|NPC_PUBLISHED|AI_ERROR|NPC_DELETED",
-  "userId": "uuid|null",
-  "npcId": "uuid|null",
-  "metadata": { "string": any }
-}
-```
-
-- **Response JSON**: `{ "id": "uuid", "createdAt": "ISO-8601" }`
-- **Success Codes**: `202 Accepted`
-- **Error Codes**: `401 Unauthorized`, `403 Forbidden`, `422 Unprocessable Entity`.
-
-### 2.6 Health & Rate Limiting
-
-- **Method**: `GET`
-- **Path**: `/health`
-- **Description**: Return service health for monitoring.
-- **Response JSON**: `{ "status": "ok", "timestamp": "ISO-8601" }`
-- **Success Codes**: `200 OK`
-- **Error Codes**: `503 Service Unavailable`.
-
-## 3. Authentication and Authorization
-
-- Supabase Magic Link authentication handled client-side; API expects `Authorization: Bearer <supabase-access-token>` on protected routes. Tokens validated using Supabase JWKS.
-- Role mapping:
-  - **Authenticated user**: access to their `profiles` record, CRUD on owned `npcs`, nested modules, AI generation, publish/delete actions.
-  - **Unauthenticated user**: read-only access to published NPC listings/details; denied access to drafts or private metadata.
-  - **Service role**: uses Supabase service key for `/telemetry/events` and background jobs.
-- Database leverages RLS policies mirroring API rules; API checks ownership before mutating resources and ensures `ownerId` immutability.
-- Enforce rate limits per IP/token (e.g., 60 requests/min) with higher allowances for authenticated owners; stricter limits on `POST /npcs/{id}/generate` (5/min per NPC) to control AI cost.
-- Require `clientRequestId` idempotency token header (`Idempotency-Key`) on `POST /npcs` to prevent duplicate drafts.
-
-## 4. Validation and Business Logic
-
-### 4.1 Cross-Cutting Validation
-
-- Reject payloads with content fields exceeding 262144 bytes; return `413 Payload Too Large` before hitting DB triggers.
-- Enforce JSON schema, types, and enum values (e.g., `npc_shop_mode`, `npc_status`).
-- Normalize string comparisons to lower-case when checking uniqueness (names, phrases).
-- Respect soft-delete semantics: standard queries exclude `deletedAt` unless explicitly requested.
-
-### 4.2 NPC Validation & Logic
-
-- Ensure `name` length 1–255, `script` equals `default.lua`, `walkInterval` 0–65535, `health` ranges, `contentSizeBytes` accurate.
-- Conditional validations: look type fields required/nullable per type; reserved phrases blocked when `shopMode=talk_mode`.
-- AI generation job stores XML + Lua preview; on success update `xml`, `contentSizeBytes`, `updatedAt`; on failure capture telemetry (`AI_ERROR`).
-- Publish action validates shop/keyword completeness, `deletedAt` null, `status` transitions, and sets `firstPublishedAt` if null.
-- Soft delete (`DELETE /npcs/{id}`) sets `deletedAt` and triggers cascade to shop items/keywords/phrases.
-- Update endpoint prevents `ownerId` changes and respects RLS; editing published NPC prompts confirmation in UI but API requires `confirmed=true` flag on publish call only.
-
-### 4.3 Shop Items Validation & Logic
-
-- Enforce limit of 255 items per list (buy/sell) per NPC prior to insert/replace.
-- Validate numeric fields (`itemId > 0`, `price >= 0`, `subtype >= 0`, `charges >= 0`).
-- Ensure `containerItemId` positive when provided.
-- Soft delete items by setting `deletedAt`; list endpoints filter by default.
-
-### 4.4 Keywords & Phrases Validation & Logic
-
-- Limit 255 keywords per NPC; each must have ≥1 phrase; phrases 1–64 chars.
-- Phrase uniqueness enforced case-insensitively per NPC; API checks before insert/update.
-- Reserved shop phrases (when `talk_mode`) rejected with `409 Conflict`.
-- Keyword responses length 1–512; sorting uses `sortIndex` non-negative.
-- Phrase management ensures cascaded soft delete when keyword removed.
-
-### 4.5 Telemetry Logic
-
-- Emit telemetry events server-side: `NPC_CREATED` after successful draft creation, `NPC_PUBLISHED` on publish success, `NPC_DELETED` when owner soft deletes an NPC (metadata may include `reason`), `AI_ERROR` on generation failure.
-- User-initiated events (`NPC_CREATED`, `NPC_PUBLISHED`, `NPC_DELETED`) are recorded directly on the server-side within the user's session context. This requires RLS policies allowing `INSERT` operations for the `authenticated` role. The dedicated endpoint and `service_role` are reserved for system events that are not directly tied to a user action (e.g., `AI_ERROR`).
-
-### 4.6 Performance & Observability
-
-- Utilize indexed queries via filters: `lower(name)` search, published partial index for public lists, `npc_id` indexes for child modules.
-- Implement cursor-based pagination using `published_at` + `id` composite for stable infinite scroll.
-- Cache featured NPCs for short TTL (e.g., 60s) to support homepage.
-- Expose structured error codes/messages for UI handling (e.g., `LIMIT_EXCEEDED`, `RESERVED_PHRASE`).
+- **Error Codes**: `400 Bad Request`, `401 Unauthorized`, `
