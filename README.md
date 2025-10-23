@@ -28,8 +28,8 @@ For full product requirements, see the PRD.
 
 - Frontend: Astro 5 (with React 19 islands), TypeScript 5, Tailwind CSS 4, shadcn/ui
 - Runtime/libs: `@astrojs/react`, `@astrojs/node`, `lucide-react`, `class-variance-authority`, `clsx`, `tailwind-merge`
-- Backend (planned): Supabase (Auth + Storage)
-- AI provider (planned): OpenRouter.ai (access to multiple model vendors)
+- Backend: Supabase (Auth, Database, Storage)
+- AI provider: OpenRouter.ai (access to multiple model vendors)
 - Tooling: ESLint 9, Prettier (with `prettier-plugin-astro`)
 - CI/CD & hosting (planned): GitHub Actions, Netlify
 
@@ -89,12 +89,16 @@ npm run format
 ├─ src/
 │  ├─ layouts/           # Astro layouts
 │  ├─ pages/             # Astro pages (routes)
+│  │  └─ api/             # API server endpoints
 │  ├─ components/        # UI components (Astro + React)
 │  │  └─ ui/             # shadcn/ui components
-│  ├─ lib/               # Helpers and services
+│  ├─ lib/               # Helpers, services, and validators
 │  ├─ styles/            # Global styles
-│  └─ db/                # Supabase clients and types (planned)
+│  ├─ db/                # Supabase clients and types
+│  ├─ middleware/        # Astro middleware
+│  └─ assets/            # Static project assets
 ├─ public/               # Static assets
+├─ supabase/             # Supabase migrations
 ├─ spec/                 # Product/research docs
 └─ .ai/                  # PRD and tech stack docs
 ```
@@ -162,8 +166,8 @@ See details in [.ai/prd.md](.ai/prd.md).
 ## 7. Project status
 
 - Version: 0.0.1
-- Status: Early WIP; UI scaffold in Astro/React/Tailwind. Integration with Supabase auth, AI generation via OpenRouter, and data persistence is planned next.
-- Roadmap (short-term): auth flow, NPC wizard forms with schema validation, AI-powered XML generation, preview and copy UX, publish model, public lists/detail pages, basic telemetry.
+- Status: In Progress. The foundational database schema (Supabase) and API plans for core features like asynchronous XML generation are complete. The project has moved beyond the initial UI scaffold into backend integration.
+- Roadmap (short-term): Implement the NPC creation/editing forms (UI) and connect them to the backend API endpoints. Finalize the Supabase auth flow and build out the public NPC list and detail pages.
 
 ## 8. License
 
