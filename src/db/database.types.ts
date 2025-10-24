@@ -147,6 +147,10 @@ export interface Database {
           created_at: string;
           decline_message: string;
           deleted_at: string | null;
+          generation_job_error: Json | null;
+          generation_job_id: string | null;
+          generation_job_started_at: string | null;
+          generation_job_status: Database["public"]["Enums"]["generation_job_status"] | null;
           farewell_message: string;
           first_published_at: string | null;
           floor_change: boolean;
@@ -189,6 +193,10 @@ export interface Database {
           created_at?: string;
           decline_message: string;
           deleted_at?: string | null;
+          generation_job_error?: Json | null;
+          generation_job_id?: string | null;
+          generation_job_started_at?: string | null;
+          generation_job_status?: Database["public"]["Enums"]["generation_job_status"] | null;
           farewell_message: string;
           first_published_at?: string | null;
           floor_change?: boolean;
@@ -231,6 +239,10 @@ export interface Database {
           created_at?: string;
           decline_message?: string;
           deleted_at?: string | null;
+          generation_job_error?: Json | null;
+          generation_job_id?: string | null;
+          generation_job_started_at?: string | null;
+          generation_job_status?: Database["public"]["Enums"]["generation_job_status"] | null;
           farewell_message?: string;
           first_published_at?: string | null;
           floor_change?: boolean;
@@ -344,6 +356,7 @@ export interface Database {
     Views: Record<never, never>;
     Functions: Record<never, never>;
     Enums: {
+      generation_job_status: "queued" | "processing" | "succeeded" | "failed";
       npc_implementation_type: "xml";
       npc_look_type: "player" | "monster" | "item";
       npc_shop_item_list_type: "buy" | "sell";
@@ -473,6 +486,7 @@ export const Constants = {
       npc_shop_mode: ["trade_window", "talk_mode"],
       npc_status: ["draft", "published"],
       npc_system: ["jiddo_tfs_1_5"],
+      generation_job_status: ["queued", "processing", "succeeded", "failed"],
     },
   },
 } as const;
