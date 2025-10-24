@@ -5,6 +5,8 @@ import type {
   DeleteNpcQueryDto,
   GetFeaturedNpcsQueryDto,
   GetNpcListQueryDto,
+  TriggerNpcGenerationCommand,
+  TriggerNpcGenerationQueryDto,
   UpdateNpcCommand,
 } from "../../types";
 const CURSOR_MAX_LENGTH = 1024;
@@ -14,6 +16,7 @@ const LIMIT_MAX = 100;
 const FEATURED_LIMIT_MIN = 1;
 const FEATURED_LIMIT_MAX = 10;
 const FEATURED_LIMIT_DEFAULT = 10;
+const XML_MAX_LENGTH = 131_072;
 
 const booleanQueryParam = z
   .preprocess((value) => {
@@ -511,4 +514,45 @@ export function validateDeleteNpcParams(payload: unknown): DeleteNpcQueryDto & {
     npcId: result.npcId,
     reason: normalizedReason,
   } satisfies DeleteNpcQueryDto & { npcId: string };
+}
+
+const triggerNpcGenerationQuerySchema = z
+  .object({
+    force: booleanQueryParam.transform((value) => value ?? false),
+  })
+  .strict();
+
+export type TriggerNpcGenerationQueryInput = z.input<typeof triggerNpcGenerationQuerySchema>;
+export type TriggerNpcGenerationQueryResult = z.output<typeof triggerNpcGenerationQuerySchema>;
+
+export function parseTriggerNpcGenerationQuery(params: URLSearchParams): TriggerNpcGenerationQueryDto {
+  const rawEntries = Object.fromEntries(params.entries());
+  const result = triggerNpcGenerationQuerySchema.safeParse(rawEntries);
+
+  if (!result.success) {
+    throw result.error;
+  }
+
+  return {
+    force: result.data.force,
+  } satisfies TriggerNpcGenerationQueryDto;
+}
+
+const triggerNpcGenerationCommandSchema: z.ZodType<TriggerNpcGenerationCommand> = z
+  .object({
+    regenerate: z.boolean(),
+    currentXml: z
+      .string()
+      .trim()
+      .max(XML_MAX_LENGTH)
+      .nullable()
+      .transform((value) => (value === "" ? null : value)),
+  })
+  .strict();
+
+export type TriggerNpcGenerationCommandInput = z.input<typeof triggerNpcGenerationCommandSchema>;
+export type TriggerNpcGenerationCommandResult = z.infer<typeof triggerNpcGenerationCommandSchema>;
+
+export function parseTriggerNpcGenerationCommand(payload: unknown): TriggerNpcGenerationCommand {
+  return triggerNpcGenerationCommandSchema.parse(payload);
 }

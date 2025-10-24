@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { Buffer } from "node:buffer";
+import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
@@ -8,11 +9,11 @@ import type { Database } from "../../db/database.types";
 import type {
   CreateNpcCommand,
   DeleteNpcResponseDto,
+  GenerationJobStatus,
   GetFeaturedNpcsQueryDto,
   GetFeaturedNpcsResponseDto,
   GetNpcListQueryDto,
   GetNpcListResponseDto,
-  PublishNpcResponseDto,
   NpcDetailResponseDto,
   NpcListItemDto,
   NpcListModulesDto,
@@ -22,6 +23,10 @@ import type {
   NpcModulesDto,
   NpcOwnerSummaryDto,
   NpcStatsDto,
+  PublishNpcResponseDto,
+  TriggerNpcGenerationCommand,
+  TriggerNpcGenerationQueryDto,
+  TriggerNpcGenerationResponseDto,
   UpdateNpcCommand,
   UpdateNpcResponseDto,
 } from "../../types";
@@ -49,6 +54,8 @@ export type NpcServiceErrorCode =
   | "NPC_ALREADY_PUBLISHED"
   | "NPC_PUBLISH_FAILED"
   | "NPC_PUBLISH_CONFLICT"
+  | "GENERATION_JOB_CONFLICT"
+  | "GENERATION_JOB_UPDATE_FAILED"
   | "XML_FETCH_FAILED"
   | "XML_NOT_FOUND"
   | "LUA_READ_FAILED"
@@ -130,6 +137,42 @@ interface NpcListCursorPayload {
 }
 
 export class NpcService {
+  async startGenerationJob(
+    npcId: string,
+    ownerId: string,
+    _command: TriggerNpcGenerationCommand,
+    query: TriggerNpcGenerationQueryDto
+  ): Promise<TriggerNpcGenerationResponseDto> {
+    if (!ownerId) {
+      throw new NpcServiceError("GENERATION_JOB_UPDATE_FAILED", {
+        cause: new Error("Missing owner identifier"),
+      });
+    }
+
+    const npc = await this.fetchNpcForGeneration(npcId, ownerId);
+
+    if (!query.force) {
+      this.ensureNoActiveJob(npc.generation_job_status);
+    }
+
+    const jobId = randomUUID();
+    const submittedAt = new Date().toISOString();
+
+    await this.updateGenerationJob(npcId, {
+      generation_job_id: jobId,
+      generation_job_status: "queued",
+      generation_job_started_at: submittedAt,
+      generation_job_error: null,
+    });
+
+    return {
+      jobId,
+      status: "queued",
+      npcId,
+      submittedAt,
+    } satisfies TriggerNpcGenerationResponseDto;
+  }
+
   async getFeaturedNpcs(query: GetFeaturedNpcsQueryDto): Promise<GetFeaturedNpcsResponseDto> {
     const limit = normalizeFeaturedLimit(query.limit);
 
@@ -207,7 +250,7 @@ export class NpcService {
     } satisfies GetNpcListResponseDto;
   }
 
-  private storageClient: SupabaseClient | null = null;
+  private serviceRoleClient: SupabaseClient | null = null;
 
   constructor(private readonly supabase: SupabaseClient) {}
 
@@ -772,26 +815,100 @@ export class NpcService {
   }
 
   private ensureStorageClient(): SupabaseClient {
-    if (this.storageClient) {
-      return this.storageClient;
+    return this.ensureServiceRoleClient("XML_FETCH_FAILED");
+  }
+
+  private ensureServiceRoleClient(
+    errorCode: Extract<NpcServiceErrorCode, "GENERATION_JOB_UPDATE_FAILED" | "XML_FETCH_FAILED">
+  ): SupabaseClient {
+    if (this.serviceRoleClient) {
+      return this.serviceRoleClient;
     }
 
     const url = import.meta.env.PUBLIC_SUPABASE_URL;
     const serviceKey = import.meta.env.SUPABASE_SECRET_KEY;
 
     if (!url || !serviceKey) {
-      throw new NpcServiceError("XML_FETCH_FAILED", {
-        cause: new Error("Supabase storage credentials are not configured"),
+      throw new NpcServiceError(errorCode, {
+        cause: new Error("Supabase service credentials are not configured"),
       });
     }
 
-    this.storageClient = createClient<Database>(url, serviceKey, {
+    this.serviceRoleClient = createClient<Database>(url, serviceKey, {
       auth: {
         persistSession: false,
       },
     }) as SupabaseClient;
 
-    return this.storageClient;
+    return this.serviceRoleClient;
+  }
+
+  private async fetchNpcForGeneration(
+    npcId: string,
+    ownerId: string
+  ): Promise<Pick<NpcRow, "id" | "owner_id" | "generation_job_status">> {
+    const { data, error } = await this.supabase
+      .from("npcs")
+      .select("id, owner_id, generation_job_status")
+      .eq("id", npcId)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      if (isForbiddenSupabaseError(error)) {
+        throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", { cause: error });
+      }
+
+      console.error("NpcService.fetchNpcForGeneration", error);
+      throw new NpcServiceError("NPC_FETCH_FAILED", { cause: error });
+    }
+
+    if (!data) {
+      throw new NpcServiceError("NPC_NOT_FOUND", {
+        cause: new Error("NPC not found for generation"),
+      });
+    }
+
+    if (data.owner_id !== ownerId) {
+      throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", {
+        cause: new Error("NPC does not belong to user"),
+      });
+    }
+
+    return {
+      id: data.id,
+      owner_id: data.owner_id,
+      generation_job_status: data.generation_job_status,
+    };
+  }
+
+  private ensureNoActiveJob(status: GenerationJobStatus | null): void {
+    if (!status) {
+      return;
+    }
+
+    if (status === "queued" || status === "processing") {
+      throw new NpcServiceError("GENERATION_JOB_CONFLICT", {
+        cause: new Error(`Generation job already in progress (status: ${status}).`),
+      });
+    }
+  }
+
+  private async updateGenerationJob(
+    npcId: string,
+    payload: Pick<
+      Database["public"]["Tables"]["npcs"]["Update"],
+      "generation_job_id" | "generation_job_status" | "generation_job_started_at" | "generation_job_error"
+    >
+  ): Promise<void> {
+    const client = this.ensureServiceRoleClient("GENERATION_JOB_UPDATE_FAILED");
+
+    const { error } = await client.from("npcs").update(payload).eq("id", npcId).select("id").maybeSingle();
+
+    if (error) {
+      console.error("NpcService.updateGenerationJob", error);
+      throw new NpcServiceError("GENERATION_JOB_UPDATE_FAILED", { cause: error });
+    }
   }
 }
 
