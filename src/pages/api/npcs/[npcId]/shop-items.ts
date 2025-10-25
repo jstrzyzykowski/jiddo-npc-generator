@@ -17,10 +17,22 @@ const pathParamsSchema = z
   })
   .strict();
 
+const queryParamsSchema = z
+  .object({
+    listType: z
+      .enum(["buy", "sell"], {
+        required_error: "listType must be either 'buy' or 'sell'.",
+        invalid_type_error: "listType must be either 'buy' or 'sell'.",
+      })
+      .optional(),
+  })
+  .strict();
+
 type ErrorCode =
   | "SUPABASE_NOT_INITIALIZED"
   | "UNAUTHORIZED"
   | "INVALID_PATH_PARAMETERS"
+  | "INVALID_QUERY_PARAMETERS"
   | "INVALID_BODY"
   | "NPC_NOT_FOUND"
   | "NPC_ACCESS_FORBIDDEN"
@@ -40,6 +52,10 @@ const ERROR_DETAILS: Record<ErrorCode, { status: number; message: string }> = {
   INVALID_PATH_PARAMETERS: {
     status: 400,
     message: "Path parameters are invalid.",
+  },
+  INVALID_QUERY_PARAMETERS: {
+    status: 400,
+    message: "Query parameters are invalid.",
   },
   INVALID_BODY: {
     status: 400,
@@ -75,14 +91,14 @@ export const PUT: APIRoute = async ({ locals, params, request }) => {
     return createErrorResponse("SUPABASE_NOT_INITIALIZED");
   }
 
-  const userId = session?.user?.id;
-  if (!userId) {
-    return createErrorResponse("UNAUTHORIZED");
-  }
-
   const paramsValidation = pathParamsSchema.safeParse(params);
   if (!paramsValidation.success) {
     return createZodErrorResponse("INVALID_PATH_PARAMETERS", paramsValidation.error);
+  }
+
+  const userId = session?.user?.id;
+  if (!userId) {
+    return createErrorResponse("UNAUTHORIZED");
   }
 
   let payload: unknown;
@@ -130,6 +146,50 @@ export const PUT: APIRoute = async ({ locals, params, request }) => {
   }
 };
 
+export const GET: APIRoute = async ({ locals, params, request }) => {
+  const supabase = locals.supabase;
+
+  if (!supabase) {
+    return createErrorResponse("SUPABASE_NOT_INITIALIZED");
+  }
+
+  const paramsValidation = pathParamsSchema.safeParse(params);
+  if (!paramsValidation.success) {
+    return createZodErrorResponse("INVALID_PATH_PARAMETERS", paramsValidation.error);
+  }
+
+  const url = new URL(request.url);
+  const queryValidation = queryParamsSchema.safeParse(Object.fromEntries(url.searchParams.entries()));
+  if (!queryValidation.success) {
+    return createZodErrorResponse("INVALID_QUERY_PARAMETERS", queryValidation.error);
+  }
+
+  const { npcId } = paramsValidation.data;
+  const { listType } = queryValidation.data;
+
+  const npcService = new NpcService(supabase);
+
+  try {
+    const items = await npcService.getNpcShopItems(npcId, { listType });
+
+    return new Response(
+      JSON.stringify({
+        items,
+      }),
+      {
+        status: 200,
+        headers: JSON_HEADERS,
+      }
+    );
+  } catch (error) {
+    if (error instanceof NpcServiceError && error.code in ERROR_DETAILS) {
+      return createErrorResponse(error.code as ErrorCode, { cause: error });
+    }
+
+    return createErrorResponse("INTERNAL_SERVER_ERROR", { cause: error });
+  }
+};
+
 function createErrorResponse(code: ErrorCode, options?: { details?: unknown; cause?: unknown }): Response {
   const { status, message } = ERROR_DETAILS[code];
 
@@ -153,7 +213,7 @@ function createErrorResponse(code: ErrorCode, options?: { details?: unknown; cau
 }
 
 function createZodErrorResponse(
-  code: Extract<ErrorCode, "INVALID_PATH_PARAMETERS" | "INVALID_BODY">,
+  code: Extract<ErrorCode, "INVALID_PATH_PARAMETERS" | "INVALID_QUERY_PARAMETERS" | "INVALID_BODY">,
   error: z.ZodError
 ): Response {
   const flattened = error.flatten();

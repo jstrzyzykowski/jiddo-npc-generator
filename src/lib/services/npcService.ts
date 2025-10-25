@@ -238,6 +238,56 @@ export class NpcService {
     }
   }
 
+  async getNpcShopItems(npcId: string, options: { listType?: "buy" | "sell" } = {}): Promise<NpcShopItemDto[]> {
+    const { listType } = options;
+
+    let query = this.supabase
+      .from("npc_shop_items")
+      .select(
+        `id, list_type, name, item_id, price, subtype, charges, real_name, container_item_id, created_at, updated_at`
+      )
+      .eq("npc_id", npcId)
+      .is("deleted_at", null);
+
+    if (listType) {
+      query = query.eq("list_type", listType);
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: true }).order("id", { ascending: true });
+
+    if (error) {
+      if (isForbiddenSupabaseError(error)) {
+        throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", { cause: error });
+      }
+
+      if (matchesNpcNotFoundError(error)) {
+        throw new NpcServiceError("NPC_NOT_FOUND", { cause: error });
+      }
+
+      console.error("NpcService.getNpcShopItems", error);
+      throw new NpcServiceError("NPC_FETCH_FAILED", { cause: error });
+    }
+
+    const rows = (data ?? []) as NpcShopItemRow[];
+
+    return rows.map(
+      (row) =>
+        ({
+          id: row.id,
+          listType: row.list_type,
+          name: row.name,
+          itemId: row.item_id,
+          price: row.price,
+          subtype: row.subtype,
+          charges: row.charges,
+          realName: row.real_name,
+          containerItemId: row.container_item_id,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+        }) satisfies NpcShopItemDto
+    );
+  }
+
   async startGenerationJob(
     npcId: string,
     ownerId: string,
