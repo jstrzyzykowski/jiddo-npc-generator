@@ -8,6 +8,7 @@ import type { SupabaseClient } from "../../db/supabase.client";
 import type { Database } from "../../db/database.types";
 import type {
   CreateNpcCommand,
+  CreateNpcShopItemCommand,
   DeleteNpcResponseDto,
   GenerationJobErrorCode,
   GenerationJobStatus,
@@ -24,6 +25,7 @@ import type {
   NpcMessagesDto,
   NpcModulesDto,
   NpcOwnerSummaryDto,
+  NpcShopItemDto,
   NpcStatsDto,
   PublishNpcResponseDto,
   TriggerNpcGenerationCommand,
@@ -39,6 +41,7 @@ type NpcInsert = Database["public"]["Tables"]["npcs"]["Insert"];
 type NpcRow = Database["public"]["Tables"]["npcs"]["Row"];
 type NpcStatus = Database["public"]["Enums"]["npc_status"];
 type NpcUpdate = Database["public"]["Tables"]["npcs"]["Update"];
+type NpcShopItemRow = Database["public"]["Tables"]["npc_shop_items"]["Row"];
 type GenerationJobUpdateColumns = Pick<
   Database["public"]["Tables"]["npcs"]["Update"],
   | "generation_job_id"
@@ -65,6 +68,8 @@ export type NpcServiceErrorCode =
   | "NPC_ALREADY_PUBLISHED"
   | "NPC_PUBLISH_FAILED"
   | "NPC_PUBLISH_CONFLICT"
+  | "NPC_SHOP_ITEM_LIMIT_EXCEEDED"
+  | "NPC_SHOP_ITEM_REPLACE_FAILED"
   | "GENERATION_JOB_CONFLICT"
   | "GENERATION_JOB_UPDATE_FAILED"
   | "XML_FETCH_FAILED"
@@ -156,6 +161,83 @@ interface NpcListCursorPayload {
 }
 
 export class NpcService {
+  async bulkReplaceNpcShopItems(
+    npcId: string,
+    items: CreateNpcShopItemCommand[],
+    ownerId: string
+  ): Promise<NpcShopItemDto[]> {
+    if (!ownerId) {
+      throw new NpcServiceError("NPC_SHOP_ITEM_REPLACE_FAILED", {
+        cause: new Error("Missing owner identifier"),
+      });
+    }
+
+    try {
+      const { data, error } = await this.supabase.rpc("bulk_replace_npc_shop_items", {
+        p_npc_id: npcId,
+        p_items: {
+          items: items.map(
+            (item) =>
+              ({
+                listType: item.listType,
+                name: item.name,
+                itemId: item.itemId,
+                price: item.price,
+                subtype: item.subtype ?? 0,
+                charges: item.charges ?? 0,
+                realName: item.realName ?? null,
+                containerItemId: item.containerItemId ?? null,
+              }) satisfies CreateNpcShopItemCommand
+          ),
+        } satisfies { items: CreateNpcShopItemCommand[] },
+      });
+
+      if (error) {
+        if (isForbiddenSupabaseError(error)) {
+          throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", { cause: error });
+        }
+
+        if (matchesShopItemLimitError(error)) {
+          throw new NpcServiceError("NPC_SHOP_ITEM_LIMIT_EXCEEDED", { cause: error });
+        }
+
+        if (matchesNpcNotFoundError(error)) {
+          throw new NpcServiceError("NPC_NOT_FOUND", { cause: error });
+        }
+
+        console.error("NpcService.bulkReplaceNpcShopItems rpc error", error);
+        throw new NpcServiceError("NPC_SHOP_ITEM_REPLACE_FAILED", { cause: error });
+      }
+
+      const rows = (data ?? []) as NpcShopItemRow[];
+      return rows
+        .filter((row) => !row.deleted_at)
+        .map(
+          (row) =>
+            ({
+              id: row.id,
+              listType: row.list_type,
+              name: row.name,
+              itemId: row.item_id,
+              price: row.price,
+              subtype: row.subtype,
+              charges: row.charges,
+              realName: row.real_name,
+              containerItemId: row.container_item_id,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+            }) satisfies NpcShopItemDto
+        );
+    } catch (error) {
+      if (error instanceof NpcServiceError) {
+        throw error;
+      }
+
+      console.error("NpcService.bulkReplaceNpcShopItems unexpected error", error);
+      throw new NpcServiceError("NPC_SHOP_ITEM_REPLACE_FAILED", { cause: error });
+    }
+  }
+
   async startGenerationJob(
     npcId: string,
     ownerId: string,
@@ -1555,6 +1637,39 @@ function isForbiddenSupabaseError(error: unknown): boolean {
 
   if (typeof candidate.message === "string" && candidate.message.toLowerCase().includes("permission denied")) {
     return true;
+  }
+
+  return false;
+}
+
+function matchesShopItemLimitError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const candidate = error as { message?: string; details?: string; code?: string };
+
+  if (typeof candidate.code === "string" && candidate.code === "P0001") {
+    return true;
+  }
+
+  const message = typeof candidate.message === "string" ? candidate.message : candidate.details;
+  return typeof message === "string" && message.includes("NPC_SHOP_ITEM_LIMIT_EXCEEDED");
+}
+
+function matchesNpcNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const candidate = error as { message?: string; code?: string };
+
+  if (candidate.code === "P0002") {
+    return true;
+  }
+
+  if (typeof candidate.message === "string") {
+    return candidate.message.includes("NPC_NOT_FOUND");
   }
 
   return false;

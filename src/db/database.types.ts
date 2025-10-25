@@ -354,7 +354,15 @@ export interface Database {
       };
     };
     Views: Record<never, never>;
-    Functions: Record<never, never>;
+    Functions: {
+      bulk_replace_npc_shop_items: {
+        Args: {
+          p_npc_id: string;
+          p_items: Json;
+        };
+        Returns: Database["public"]["Tables"]["npc_shop_items"]["Row"][];
+      };
+    };
     Enums: {
       generation_job_status: "queued" | "processing" | "succeeded" | "failed";
       npc_implementation_type: "xml";

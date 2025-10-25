@@ -1,7 +1,9 @@
 import { z } from "zod";
 
 import type {
+  BulkReplaceNpcShopItemsCommand,
   CreateNpcCommand,
+  CreateNpcShopItemCommand,
   DeleteNpcQueryDto,
   GetFeaturedNpcsQueryDto,
   GetNpcListQueryDto,
@@ -17,6 +19,19 @@ const FEATURED_LIMIT_MIN = 1;
 const FEATURED_LIMIT_MAX = 10;
 const FEATURED_LIMIT_DEFAULT = 10;
 const XML_MAX_LENGTH = 131_072;
+const SHOP_ITEM_NAME_MAX_LENGTH = 255;
+const SHOP_ITEM_REAL_NAME_MAX_LENGTH = 255;
+const SHOP_ITEMS_LIMIT_MAX = 255;
+
+type CreateNpcShopItemCommandInput = Omit<
+  CreateNpcShopItemCommand,
+  "subtype" | "charges" | "realName" | "containerItemId"
+> & {
+  subtype?: number;
+  charges?: number;
+  realName?: string | null;
+  containerItemId?: number | null;
+};
 
 const booleanQueryParam = z
   .preprocess((value) => {
@@ -555,4 +570,50 @@ export type TriggerNpcGenerationCommandResult = z.infer<typeof triggerNpcGenerat
 
 export function parseTriggerNpcGenerationCommand(payload: unknown): TriggerNpcGenerationCommand {
   return triggerNpcGenerationCommandSchema.parse(payload);
+}
+
+const createNpcShopItemCommandSchema: z.ZodType<CreateNpcShopItemCommand, z.ZodTypeDef, CreateNpcShopItemCommandInput> =
+  z
+    .object({
+      listType: z.enum(["buy", "sell"]),
+      name: z.string().trim().min(1).max(SHOP_ITEM_NAME_MAX_LENGTH),
+      itemId: z.number().int().positive(),
+      price: z.number().int().min(0),
+      subtype: z.number().int().min(0).optional(),
+      charges: z.number().int().min(0).optional(),
+      realName: z.string().trim().max(SHOP_ITEM_REAL_NAME_MAX_LENGTH).optional().nullable(),
+      containerItemId: z.number().int().positive().optional().nullable(),
+    })
+    .strict()
+    .transform((item) => {
+      const normalizedRealName = typeof item.realName === "string" ? item.realName.trim() : null;
+
+      return {
+        listType: item.listType,
+        name: item.name,
+        itemId: item.itemId,
+        price: item.price,
+        subtype: item.subtype ?? 0,
+        charges: item.charges ?? 0,
+        realName: normalizedRealName && normalizedRealName.length > 0 ? normalizedRealName : null,
+        containerItemId: item.containerItemId ?? null,
+      } satisfies CreateNpcShopItemCommand;
+    });
+
+const bulkReplaceNpcShopItemsCommandSchema: z.ZodType<
+  BulkReplaceNpcShopItemsCommand,
+  z.ZodTypeDef,
+  { items: CreateNpcShopItemCommandInput[] }
+> = z
+  .object({
+    items: z.array(createNpcShopItemCommandSchema).max(SHOP_ITEMS_LIMIT_MAX),
+  })
+  .strict()
+  .transform((value) => ({ items: value.items }) satisfies BulkReplaceNpcShopItemsCommand);
+
+export type BulkReplaceNpcShopItemsCommandInput = z.input<typeof bulkReplaceNpcShopItemsCommandSchema>;
+export type BulkReplaceNpcShopItemsCommandResult = z.infer<typeof bulkReplaceNpcShopItemsCommandSchema>;
+
+export function parseBulkReplaceNpcShopItemsCommand(payload: unknown): BulkReplaceNpcShopItemsCommand {
+  return bulkReplaceNpcShopItemsCommandSchema.parse(payload);
 }
