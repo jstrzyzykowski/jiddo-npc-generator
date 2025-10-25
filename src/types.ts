@@ -274,9 +274,7 @@ export interface DeleteNpcShopItemResponseDto {
 }
 
 export interface GetNpcKeywordsQueryDto {
-  includeDeleted?: boolean;
   limit?: number;
-  cursor?: string;
 }
 
 export interface NpcKeywordPhraseDto {
@@ -293,7 +291,9 @@ export interface NpcKeywordDto {
   updatedAt: NpcKeywordRow["updated_at"];
 }
 
-export type GetNpcKeywordsResponseDto = PaginationResponse<NpcKeywordDto>;
+export interface GetNpcKeywordsResponseDto {
+  items: NpcKeywordDto[];
+}
 
 export interface NpcKeywordCreationData {
   response: NpcKeywordRow["response"];

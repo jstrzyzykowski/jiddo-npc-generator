@@ -16,6 +16,7 @@ import type {
   GenerationJobStatusResponseDto,
   GetFeaturedNpcsQueryDto,
   GetFeaturedNpcsResponseDto,
+  GetNpcKeywordsQueryDto,
   GetNpcListQueryDto,
   GetNpcListResponseDto,
   NpcDetailResponseDto,
@@ -54,6 +55,21 @@ type GenerationJobUpdateColumns = Pick<
 >;
 
 type RawNpcKeywordRpcRow = Database["public"]["Functions"]["bulk_replace_npc_keywords"]["Returns"][number];
+
+interface RawNpcKeywordRow {
+  id: string;
+  response: string;
+  sort_index: number;
+  created_at: string;
+  updated_at: string;
+  npc_keyword_phrases: RawNpcKeywordPhraseRow[] | null;
+}
+
+interface RawNpcKeywordPhraseRow {
+  id: string;
+  phrase: string;
+  deleted_at: string | null;
+}
 
 export interface CreateNpcServiceResult {
   npc: Pick<NpcRow, "id" | "status" | "owner_id" | "created_at" | "updated_at">;
@@ -110,6 +126,8 @@ const MAX_LIST_LIMIT = 100;
 const FEATURED_LIMIT_MIN = 1;
 const FEATURED_LIMIT_MAX = 10;
 const FEATURED_LIMIT_DEFAULT = 10;
+const KEYWORD_LIMIT_DEFAULT = 20;
+const KEYWORD_LIMIT_MAX = 100;
 const ALLOWED_SORT_FIELDS = ["published_at", "updated_at", "created_at"] as const;
 const DEFAULT_SORT_FIELD = ALLOWED_SORT_FIELDS[0];
 const DEFAULT_SORT_ORDER = "desc" as const;
@@ -302,6 +320,80 @@ export class NpcService {
 
       console.error("NpcService.bulkReplaceNpcKeywords unexpected error", error);
       throw new NpcServiceError("NPC_KEYWORD_REPLACE_FAILED", { cause: error });
+    }
+  }
+
+  async getNpcKeywords(npcId: string, query: GetNpcKeywordsQueryDto = {}): Promise<NpcKeywordDto[]> {
+    const limit = normalizeKeywordLimit(query.limit);
+
+    try {
+      const { data, error } = await this.supabase
+        .from("npc_keywords")
+        .select(
+          `
+            id,
+            response,
+            sort_index,
+            created_at,
+            updated_at,
+            npc_keyword_phrases (
+              id,
+              phrase,
+              deleted_at
+            )
+          `
+        )
+        .eq("npc_id", npcId)
+        .is("deleted_at", null)
+        .order("sort_index", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true })
+        .limit(limit);
+
+      if (error) {
+        if (isForbiddenSupabaseError(error)) {
+          throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", { cause: error });
+        }
+
+        console.error("NpcService.getNpcKeywords query error", error);
+        throw new NpcServiceError("NPC_FETCH_FAILED", { cause: error });
+      }
+
+      const rows = (data ?? []) as RawNpcKeywordRow[];
+
+      if (rows.length === 0) {
+        const { data: npcRow, error: npcError } = await this.supabase
+          .from("npcs")
+          .select("id")
+          .eq("id", npcId)
+          .is("deleted_at", null)
+          .maybeSingle();
+
+        if (npcError) {
+          if (isForbiddenSupabaseError(npcError)) {
+            throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", { cause: npcError });
+          }
+
+          console.error("NpcService.getNpcKeywords npc lookup error", npcError);
+          throw new NpcServiceError("NPC_FETCH_FAILED", { cause: npcError });
+        }
+
+        if (!npcRow) {
+          throw new NpcServiceError("NPC_NOT_FOUND", {
+            cause: new Error("NPC not found or not accessible"),
+          });
+        }
+
+        return [];
+      }
+
+      return rows.map((row) => mapKeywordRow(row));
+    } catch (error) {
+      if (error instanceof NpcServiceError) {
+        throw error;
+      }
+
+      console.error("NpcService.getNpcKeywords unexpected error", error);
+      throw new NpcServiceError("NPC_FETCH_FAILED", { cause: error });
     }
   }
 
@@ -1306,6 +1398,24 @@ function normalizeGenerationJobError(error: unknown): GenerationJobStatusRespons
   };
 }
 
+function normalizeKeywordLimit(limit: number | undefined): number {
+  if (typeof limit !== "number" || !Number.isFinite(limit)) {
+    return KEYWORD_LIMIT_DEFAULT;
+  }
+
+  const coerced = Math.floor(limit);
+
+  if (coerced < 1) {
+    return 1;
+  }
+
+  if (coerced > KEYWORD_LIMIT_MAX) {
+    return KEYWORD_LIMIT_MAX;
+  }
+
+  return coerced;
+}
+
 function normalizeNpcListQuery(query: GetNpcListQueryDto): NormalizedGetNpcListQuery {
   const visibility = (query.visibility ?? "public") as NpcListVisibilityFilter;
   const limitInput = typeof query.limit === "number" && Number.isFinite(query.limit) ? query.limit : DEFAULT_LIST_LIMIT;
@@ -1839,6 +1949,33 @@ function mapRpcKeywordRow(row: RawNpcKeywordRpcRow): NpcKeywordDto {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   } satisfies NpcKeywordDto;
+}
+
+function mapKeywordRow(row: RawNpcKeywordRow): NpcKeywordDto {
+  return {
+    id: row.id,
+    response: row.response,
+    sortIndex: row.sort_index,
+    phrases: mapKeywordPhrases(row.npc_keyword_phrases),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  } satisfies NpcKeywordDto;
+}
+
+function mapKeywordPhrases(rows: RawNpcKeywordPhraseRow[] | null): NpcKeywordDto["phrases"] {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return [];
+  }
+
+  return rows
+    .filter((row): row is RawNpcKeywordPhraseRow => Boolean(row) && row.deleted_at === null)
+    .map(
+      (row) =>
+        ({
+          id: row.id,
+          phrase: row.phrase,
+        }) satisfies NpcKeywordDto["phrases"][number]
+    );
 }
 
 function normalizeNpcKeywordPhrases(_keywordId: string, value: unknown): NpcKeywordDto["phrases"] {

@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
 
+import type { GetNpcKeywordsResponseDto } from "../../../../types";
 import { NpcService, NpcServiceError } from "../../../../lib/services/npcService";
 import { parseBulkReplaceNpcKeywordsCommand } from "../../../../lib/validators/npcValidators";
 
@@ -11,9 +12,51 @@ const JSON_HEADERS: HeadersInit = {
   "Cache-Control": "no-store",
 };
 
+const KEYWORD_LIMIT_MIN = 1;
+const KEYWORD_LIMIT_MAX = 100;
+
 const pathParamsSchema = z
   .object({
     npcId: z.string().uuid({ message: "npcId must be a valid UUID." }),
+  })
+  .strict();
+
+const queryParamsSchema = z
+  .object({
+    limit: z
+      .preprocess(
+        (value) => {
+          if (value === undefined) {
+            return undefined;
+          }
+
+          if (typeof value === "string") {
+            const trimmed = value.trim();
+            if (trimmed.length === 0) {
+              return value;
+            }
+
+            const parsed = Number(trimmed);
+            if (!Number.isFinite(parsed)) {
+              return value;
+            }
+
+            return parsed;
+          }
+
+          return value;
+        },
+        z
+          .number({ invalid_type_error: "limit must be a number." })
+          .int("limit must be an integer.")
+          .min(KEYWORD_LIMIT_MIN, {
+            message: `limit must be between ${KEYWORD_LIMIT_MIN} and ${KEYWORD_LIMIT_MAX}.`,
+          })
+          .max(KEYWORD_LIMIT_MAX, {
+            message: `limit must be between ${KEYWORD_LIMIT_MIN} and ${KEYWORD_LIMIT_MAX}.`,
+          })
+      )
+      .optional(),
   })
   .strict();
 
@@ -21,12 +64,14 @@ type ErrorCode =
   | "SUPABASE_NOT_INITIALIZED"
   | "UNAUTHORIZED"
   | "INVALID_PATH_PARAMETERS"
+  | "INVALID_QUERY_PARAMETERS"
   | "INVALID_BODY"
   | "NPC_NOT_FOUND"
   | "NPC_ACCESS_FORBIDDEN"
   | "NPC_KEYWORD_LIMIT_EXCEEDED"
   | "NPC_KEYWORD_CONFLICT"
   | "NPC_KEYWORD_REPLACE_FAILED"
+  | "NPC_FETCH_FAILED"
   | "INTERNAL_SERVER_ERROR";
 
 const ERROR_DETAILS: Record<ErrorCode, { status: number; message: string }> = {
@@ -41,6 +86,10 @@ const ERROR_DETAILS: Record<ErrorCode, { status: number; message: string }> = {
   INVALID_PATH_PARAMETERS: {
     status: 400,
     message: "Path parameters are invalid.",
+  },
+  INVALID_QUERY_PARAMETERS: {
+    status: 400,
+    message: "Query parameters are invalid.",
   },
   INVALID_BODY: {
     status: 400,
@@ -65,6 +114,10 @@ const ERROR_DETAILS: Record<ErrorCode, { status: number; message: string }> = {
   NPC_KEYWORD_REPLACE_FAILED: {
     status: 500,
     message: "Unable to update NPC keywords due to an unexpected error.",
+  },
+  NPC_FETCH_FAILED: {
+    status: 500,
+    message: "Unable to fetch NPC data due to an unexpected error.",
   },
   INTERNAL_SERVER_ERROR: {
     status: 500,
@@ -117,15 +170,12 @@ export const PUT: APIRoute = async ({ locals, params, request }) => {
   try {
     const keywords = await npcService.bulkReplaceNpcKeywords(npcId, userId, command);
 
-    return new Response(
-      JSON.stringify({
+    return jsonResponse({
+      status: 200,
+      body: {
         items: keywords,
-      }),
-      {
-        status: 200,
-        headers: JSON_HEADERS,
-      }
-    );
+      },
+    });
   } catch (error) {
     if (error instanceof NpcServiceError && error.code in ERROR_DETAILS) {
       return createErrorResponse(error.code as ErrorCode, { cause: error });
@@ -135,6 +185,53 @@ export const PUT: APIRoute = async ({ locals, params, request }) => {
   }
 };
 
+export const GET: APIRoute = async ({ locals, params, request }) => {
+  const supabase = locals.supabase;
+
+  if (!supabase) {
+    return createErrorResponse("SUPABASE_NOT_INITIALIZED");
+  }
+
+  const paramsValidation = pathParamsSchema.safeParse(params);
+  if (!paramsValidation.success) {
+    return createZodErrorResponse("INVALID_PATH_PARAMETERS", paramsValidation.error);
+  }
+
+  const queryValidation = queryParamsSchema.safeParse(Object.fromEntries(new URL(request.url).searchParams.entries()));
+  if (!queryValidation.success) {
+    return createZodErrorResponse("INVALID_QUERY_PARAMETERS", queryValidation.error);
+  }
+
+  const { npcId } = paramsValidation.data;
+  const { limit } = queryValidation.data;
+
+  const npcService = new NpcService(supabase);
+
+  try {
+    const keywords = await npcService.getNpcKeywords(npcId, { limit });
+
+    return jsonResponse({
+      status: 200,
+      body: {
+        items: keywords,
+      } satisfies GetNpcKeywordsResponseDto,
+    });
+  } catch (error) {
+    if (error instanceof NpcServiceError && error.code in ERROR_DETAILS) {
+      return createErrorResponse(error.code as ErrorCode, { cause: error });
+    }
+
+    return createErrorResponse("INTERNAL_SERVER_ERROR", { cause: error });
+  }
+};
+
+function jsonResponse({ status, body }: { status: number; body: unknown }): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: JSON_HEADERS,
+  });
+}
+
 function createErrorResponse(code: ErrorCode, options?: { details?: unknown; cause?: unknown }): Response {
   const { status, message } = ERROR_DETAILS[code];
 
@@ -142,23 +239,20 @@ function createErrorResponse(code: ErrorCode, options?: { details?: unknown; cau
     console.error("/api/npcs/:npcId/keywords", code, options.cause);
   }
 
-  return new Response(
-    JSON.stringify({
+  return jsonResponse({
+    status,
+    body: {
       error: {
         code,
         message,
         details: options?.details,
       },
-    }),
-    {
-      status,
-      headers: JSON_HEADERS,
-    }
-  );
+    },
+  });
 }
 
 function createZodErrorResponse(
-  code: Extract<ErrorCode, "INVALID_PATH_PARAMETERS" | "INVALID_BODY">,
+  code: Extract<ErrorCode, "INVALID_PATH_PARAMETERS" | "INVALID_QUERY_PARAMETERS" | "INVALID_BODY">,
   error: z.ZodError
 ): Response {
   const flattened = error.flatten();
