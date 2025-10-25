@@ -362,6 +362,22 @@ export interface Database {
         };
         Returns: Database["public"]["Tables"]["npc_shop_items"]["Row"][];
       };
+      bulk_replace_npc_keywords: {
+        Args: {
+          p_npc_id: string;
+          p_owner_id: string;
+          p_keywords: Json;
+        };
+        Returns: {
+          id: string;
+          npc_id: string;
+          response: string;
+          sort_index: number;
+          created_at: string;
+          updated_at: string;
+          phrases: Json;
+        }[];
+      };
     };
     Enums: {
       generation_job_status: "queued" | "processing" | "succeeded" | "failed";

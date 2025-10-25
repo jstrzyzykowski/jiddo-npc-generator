@@ -295,6 +295,20 @@ export interface NpcKeywordDto {
 
 export type GetNpcKeywordsResponseDto = PaginationResponse<NpcKeywordDto>;
 
+export interface NpcKeywordCreationData {
+  response: NpcKeywordRow["response"];
+  sortIndex: NpcKeywordRow["sort_index"];
+  phrases: NpcKeywordPhraseRow["phrase"][];
+}
+
+export interface BulkReplaceNpcKeywordsCommand {
+  items: NpcKeywordCreationData[];
+}
+
+export interface BulkReplaceNpcKeywordsResponseDto {
+  items: NpcKeywordDto[];
+}
+
 export interface CreateNpcKeywordCommand {
   response: NpcKeywordRow["response"];
   phrases?: NpcKeywordPhraseRow["phrase"][];

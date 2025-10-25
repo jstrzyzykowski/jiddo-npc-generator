@@ -5,8 +5,9 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import type { SupabaseClient } from "../../db/supabase.client";
-import type { Database } from "../../db/database.types";
+import type { Database, Json } from "../../db/database.types";
 import type {
+  BulkReplaceNpcKeywordsCommand,
   CreateNpcCommand,
   CreateNpcShopItemCommand,
   DeleteNpcResponseDto,
@@ -18,6 +19,7 @@ import type {
   GetNpcListQueryDto,
   GetNpcListResponseDto,
   NpcDetailResponseDto,
+  NpcKeywordDto,
   NpcListItemDto,
   NpcListModulesDto,
   NpcListVisibilityFilter,
@@ -51,6 +53,8 @@ type GenerationJobUpdateColumns = Pick<
   | "content_size_bytes"
 >;
 
+type RawNpcKeywordRpcRow = Database["public"]["Functions"]["bulk_replace_npc_keywords"]["Returns"][number];
+
 export interface CreateNpcServiceResult {
   npc: Pick<NpcRow, "id" | "status" | "owner_id" | "created_at" | "updated_at">;
   created: boolean;
@@ -70,6 +74,9 @@ export type NpcServiceErrorCode =
   | "NPC_PUBLISH_CONFLICT"
   | "NPC_SHOP_ITEM_LIMIT_EXCEEDED"
   | "NPC_SHOP_ITEM_REPLACE_FAILED"
+  | "NPC_KEYWORD_LIMIT_EXCEEDED"
+  | "NPC_KEYWORD_CONFLICT"
+  | "NPC_KEYWORD_REPLACE_FAILED"
   | "GENERATION_JOB_CONFLICT"
   | "GENERATION_JOB_UPDATE_FAILED"
   | "XML_FETCH_FAILED"
@@ -235,6 +242,66 @@ export class NpcService {
 
       console.error("NpcService.bulkReplaceNpcShopItems unexpected error", error);
       throw new NpcServiceError("NPC_SHOP_ITEM_REPLACE_FAILED", { cause: error });
+    }
+  }
+
+  async bulkReplaceNpcKeywords(
+    npcId: string,
+    ownerId: string,
+    command: BulkReplaceNpcKeywordsCommand
+  ): Promise<NpcKeywordDto[]> {
+    if (!ownerId) {
+      throw new NpcServiceError("NPC_KEYWORD_REPLACE_FAILED", {
+        cause: new Error("Missing owner identifier"),
+      });
+    }
+
+    try {
+      const payload: Json = {
+        items: command.items.map((item) => ({
+          response: item.response.trim(),
+          sortIndex: item.sortIndex,
+          phrases: item.phrases.map((phrase) => phrase.trim()),
+        })),
+      };
+
+      const { data, error } = await this.supabase.rpc("bulk_replace_npc_keywords", {
+        p_npc_id: npcId,
+        p_owner_id: ownerId,
+        p_keywords: payload,
+      });
+
+      if (error) {
+        if (isForbiddenSupabaseError(error)) {
+          throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", { cause: error });
+        }
+
+        if (matchesKeywordLimitError(error)) {
+          throw new NpcServiceError("NPC_KEYWORD_LIMIT_EXCEEDED", { cause: error });
+        }
+
+        if (matchesKeywordConflictError(error)) {
+          throw new NpcServiceError("NPC_KEYWORD_CONFLICT", { cause: error });
+        }
+
+        if (matchesNpcNotFoundError(error)) {
+          throw new NpcServiceError("NPC_NOT_FOUND", { cause: error });
+        }
+
+        console.error("NpcService.bulkReplaceNpcKeywords rpc error", error);
+        throw new NpcServiceError("NPC_KEYWORD_REPLACE_FAILED", { cause: error });
+      }
+
+      const rows = (data ?? []) as RawNpcKeywordRpcRow[];
+
+      return rows.map((row) => mapRpcKeywordRow(row));
+    } catch (error) {
+      if (error instanceof NpcServiceError) {
+        throw error;
+      }
+
+      console.error("NpcService.bulkReplaceNpcKeywords unexpected error", error);
+      throw new NpcServiceError("NPC_KEYWORD_REPLACE_FAILED", { cause: error });
     }
   }
 
@@ -1707,6 +1774,44 @@ function matchesShopItemLimitError(error: unknown): boolean {
   return typeof message === "string" && message.includes("NPC_SHOP_ITEM_LIMIT_EXCEEDED");
 }
 
+function matchesKeywordLimitError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const candidate = error as { message?: string; details?: string; code?: string };
+
+  if (candidate.code === "P0001") {
+    const diagnostic = typeof candidate.message === "string" ? candidate.message : candidate.details;
+    return typeof diagnostic === "string" && diagnostic.includes("NPC_KEYWORD_LIMIT_EXCEEDED");
+  }
+
+  const message = typeof candidate.message === "string" ? candidate.message : candidate.details;
+  return typeof message === "string" && message.includes("NPC_KEYWORD_LIMIT_EXCEEDED");
+}
+
+function matchesKeywordConflictError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const candidate = error as { message?: string; code?: string; details?: string };
+
+  if (candidate.code === "23505" || candidate.code === "23514" || candidate.code === "23P01") {
+    return true;
+  }
+
+  if (typeof candidate.message === "string" && candidate.message.includes("NPC_KEYWORD_CONFLICT")) {
+    return true;
+  }
+
+  if (typeof candidate.details === "string" && candidate.details.includes("npc_keyword_phrases")) {
+    return true;
+  }
+
+  return false;
+}
+
 function matchesNpcNotFoundError(error: unknown): boolean {
   if (!error || typeof error !== "object") {
     return false;
@@ -1723,6 +1828,44 @@ function matchesNpcNotFoundError(error: unknown): boolean {
   }
 
   return false;
+}
+
+function mapRpcKeywordRow(row: RawNpcKeywordRpcRow): NpcKeywordDto {
+  return {
+    id: row.id,
+    response: row.response,
+    sortIndex: row.sort_index,
+    phrases: normalizeNpcKeywordPhrases(row.id, row.phrases),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  } satisfies NpcKeywordDto;
+}
+
+function normalizeNpcKeywordPhrases(_keywordId: string, value: unknown): NpcKeywordDto["phrases"] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+
+      const candidate = entry as { id?: unknown; phrase?: unknown };
+      const id = typeof candidate.id === "string" ? candidate.id : null;
+      const phrase = typeof candidate.phrase === "string" ? candidate.phrase : null;
+
+      if (!id || !phrase) {
+        return null;
+      }
+
+      return {
+        id,
+        phrase,
+      } satisfies NpcKeywordDto["phrases"][number];
+    })
+    .filter((phrase): phrase is NpcKeywordDto["phrases"][number] => phrase !== null);
 }
 
 function isDuplicateClientRequestError(error: unknown): boolean {

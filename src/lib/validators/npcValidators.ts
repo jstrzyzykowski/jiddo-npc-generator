@@ -1,12 +1,14 @@
 import { z } from "zod";
 
 import type {
+  BulkReplaceNpcKeywordsCommand,
   BulkReplaceNpcShopItemsCommand,
   CreateNpcCommand,
   CreateNpcShopItemCommand,
   DeleteNpcQueryDto,
   GetFeaturedNpcsQueryDto,
   GetNpcListQueryDto,
+  NpcKeywordCreationData,
   TriggerNpcGenerationCommand,
   TriggerNpcGenerationQueryDto,
   UpdateNpcCommand,
@@ -22,6 +24,59 @@ const XML_MAX_LENGTH = 131_072;
 const SHOP_ITEM_NAME_MAX_LENGTH = 255;
 const SHOP_ITEM_REAL_NAME_MAX_LENGTH = 255;
 const SHOP_ITEMS_LIMIT_MAX = 255;
+const KEYWORD_RESPONSE_MAX_LENGTH = 512;
+const KEYWORD_PHRASE_MAX_LENGTH = 64;
+const KEYWORD_LIMIT_MAX = 255;
+
+const npcKeywordPhraseSchema = z
+  .string()
+  .trim()
+  .min(1, { message: "Phrase cannot be empty." })
+  .max(KEYWORD_PHRASE_MAX_LENGTH, {
+    message: `Phrase must be at most ${KEYWORD_PHRASE_MAX_LENGTH} characters long.`,
+  });
+
+const npcKeywordCreationSchema: z.ZodType<NpcKeywordCreationData> = z
+  .object({
+    response: z
+      .string()
+      .trim()
+      .min(1, { message: "Response cannot be empty." })
+      .max(KEYWORD_RESPONSE_MAX_LENGTH, {
+        message: `Response must be at most ${KEYWORD_RESPONSE_MAX_LENGTH} characters long.`,
+      }),
+    sortIndex: z
+      .number({ required_error: "sortIndex is required." })
+      .int({ message: "sortIndex must be an integer." })
+      .min(0, { message: "sortIndex must be a non-negative integer." }),
+    phrases: z
+      .array(npcKeywordPhraseSchema, {
+        required_error: "phrases is required.",
+        invalid_type_error: "phrases must be an array of strings.",
+      })
+      .min(1, { message: "phrases must contain at least one phrase." }),
+  })
+  .strict();
+
+const bulkReplaceNpcKeywordsCommandSchema: z.ZodType<BulkReplaceNpcKeywordsCommand> = z
+  .object({
+    items: z
+      .array(npcKeywordCreationSchema, {
+        required_error: "items is required.",
+        invalid_type_error: "items must be an array of keyword definitions.",
+      })
+      .max(KEYWORD_LIMIT_MAX, {
+        message: `items must contain at most ${KEYWORD_LIMIT_MAX} entries.`,
+      }),
+  })
+  .strict();
+
+export type BulkReplaceNpcKeywordsCommandInput = z.input<typeof bulkReplaceNpcKeywordsCommandSchema>;
+export type BulkReplaceNpcKeywordsCommandResult = z.output<typeof bulkReplaceNpcKeywordsCommandSchema>;
+
+export function parseBulkReplaceNpcKeywordsCommand(payload: unknown): BulkReplaceNpcKeywordsCommand {
+  return bulkReplaceNpcKeywordsCommandSchema.parse(payload);
+}
 
 type CreateNpcShopItemCommandInput = Omit<
   CreateNpcShopItemCommand,
