@@ -9,7 +9,9 @@ import type { Database } from "../../db/database.types";
 import type {
   CreateNpcCommand,
   DeleteNpcResponseDto,
+  GenerationJobErrorCode,
   GenerationJobStatus,
+  GenerationJobStatusResponseDto,
   GetFeaturedNpcsQueryDto,
   GetFeaturedNpcsResponseDto,
   GetNpcListQueryDto,
@@ -31,11 +33,20 @@ import type {
   UpdateNpcResponseDto,
 } from "../../types";
 import { createEvent as createTelemetryEvent, TelemetryServiceError } from "./telemetryService";
+import { getElapsedMilliseconds } from "../utils";
 
 type NpcInsert = Database["public"]["Tables"]["npcs"]["Insert"];
 type NpcRow = Database["public"]["Tables"]["npcs"]["Row"];
 type NpcStatus = Database["public"]["Enums"]["npc_status"];
 type NpcUpdate = Database["public"]["Tables"]["npcs"]["Update"];
+type GenerationJobUpdateColumns = Pick<
+  Database["public"]["Tables"]["npcs"]["Update"],
+  | "generation_job_id"
+  | "generation_job_status"
+  | "generation_job_started_at"
+  | "generation_job_error"
+  | "content_size_bytes"
+>;
 
 export interface CreateNpcServiceResult {
   npc: Pick<NpcRow, "id" | "status" | "owner_id" | "created_at" | "updated_at">;
@@ -73,6 +84,14 @@ export class NpcServiceError extends Error {
 
 const DEFAULT_XML_BUCKET = "npc-xml-files";
 const DEFAULT_LUA_FILE_PATH = resolve("src", "assets", "lua", "default.lua");
+const MOCK_XML_FILE_PATH = resolve("src", "assets", "mocks", "sample-npc.xml");
+const MOCK_GENERATION_DELAY_MS = 3_000;
+const KNOWN_GENERATION_JOB_ERROR_CODES = new Set<GenerationJobErrorCode>([
+  "AI_TIMEOUT",
+  "AI_INVALID_XML",
+  "LIMIT_EXCEEDED",
+]);
+const GENERATION_STATUS_REFRESH_THRESHOLD_MS = 250;
 
 const DEFAULT_LIST_LIMIT = 20;
 const MAX_LIST_LIMIT = 100;
@@ -171,6 +190,100 @@ export class NpcService {
       npcId,
       submittedAt,
     } satisfies TriggerNpcGenerationResponseDto;
+  }
+
+  async getGenerationJobStatus(npcId: string, jobId: string, ownerId: string): Promise<GenerationJobStatusResponseDto> {
+    if (!ownerId) {
+      throw new NpcServiceError("GENERATION_JOB_UPDATE_FAILED", {
+        cause: new Error("Missing owner identifier"),
+      });
+    }
+
+    const npc = await this.fetchNpcForGenerationStatus(npcId, jobId, ownerId);
+    const status = npc.generation_job_status ?? "queued";
+
+    if (!npc.generation_job_started_at) {
+      throw new NpcServiceError("GENERATION_JOB_UPDATE_FAILED", {
+        cause: new Error("Generation job start time is missing"),
+      });
+    }
+
+    const elapsedMs = getElapsedMilliseconds(npc.generation_job_started_at);
+    if (elapsedMs === null) {
+      throw new NpcServiceError("GENERATION_JOB_UPDATE_FAILED", {
+        cause: new Error("Unable to compute elapsed time for generation job"),
+      });
+    }
+
+    if (status === "succeeded") {
+      const xmlContent = await this.readMockXml();
+      const contentSizeBytes = Buffer.byteLength(xmlContent, "utf8");
+
+      if (npc.content_size_bytes !== contentSizeBytes) {
+        await this.updateGenerationJob(npcId, {
+          content_size_bytes: contentSizeBytes,
+        });
+      }
+
+      return {
+        jobId,
+        npcId,
+        status: "succeeded",
+        xml: xmlContent,
+        contentSizeBytes,
+        error: null,
+        updatedAt: new Date().toISOString(),
+      } satisfies GenerationJobStatusResponseDto;
+    }
+
+    if (status === "failed") {
+      return {
+        jobId,
+        npcId,
+        status: "failed",
+        xml: null,
+        contentSizeBytes: npc.content_size_bytes,
+        error: normalizeGenerationJobError(npc.generation_job_error),
+        updatedAt: new Date().toISOString(),
+      } satisfies GenerationJobStatusResponseDto;
+    }
+
+    if (elapsedMs < MOCK_GENERATION_DELAY_MS) {
+      if (status !== "processing" && elapsedMs >= GENERATION_STATUS_REFRESH_THRESHOLD_MS) {
+        await this.updateGenerationJob(npcId, {
+          generation_job_status: "processing",
+        });
+      }
+
+      return {
+        jobId,
+        npcId,
+        status: "processing",
+        xml: null,
+        contentSizeBytes: npc.content_size_bytes,
+        error: null,
+        updatedAt: new Date().toISOString(),
+      } satisfies GenerationJobStatusResponseDto;
+    }
+
+    const xmlContent = await this.readMockXml();
+    const contentSizeBytes = Buffer.byteLength(xmlContent, "utf8");
+
+    await this.updateGenerationJob(npcId, {
+      generation_job_status: "succeeded",
+      generation_job_error: null,
+      content_size_bytes: contentSizeBytes,
+    });
+
+    return {
+      jobId,
+      npcId,
+      status: "succeeded",
+      xml: xmlContent,
+      contentSizeBytes,
+      error: null,
+      updatedAt: new Date().toISOString(),
+    } satisfies GenerationJobStatusResponseDto;
   }
 
   async getFeaturedNpcs(query: GetFeaturedNpcsQueryDto): Promise<GetFeaturedNpcsResponseDto> {
@@ -894,13 +1007,11 @@ export class NpcService {
     }
   }
 
-  private async updateGenerationJob(
-    npcId: string,
-    payload: Pick<
-      Database["public"]["Tables"]["npcs"]["Update"],
-      "generation_job_id" | "generation_job_status" | "generation_job_started_at" | "generation_job_error"
-    >
-  ): Promise<void> {
+  private async updateGenerationJob(npcId: string, payload: Partial<GenerationJobUpdateColumns>): Promise<void> {
+    if (!payload || Object.keys(payload).length === 0) {
+      return;
+    }
+
     const client = this.ensureServiceRoleClient("GENERATION_JOB_UPDATE_FAILED");
 
     const { error } = await client.from("npcs").update(payload).eq("id", npcId).select("id").maybeSingle();
@@ -910,6 +1021,90 @@ export class NpcService {
       throw new NpcServiceError("GENERATION_JOB_UPDATE_FAILED", { cause: error });
     }
   }
+
+  private async fetchNpcForGenerationStatus(
+    npcId: string,
+    jobId: string,
+    ownerId: string
+  ): Promise<
+    Pick<
+      NpcRow,
+      | "id"
+      | "owner_id"
+      | "generation_job_id"
+      | "generation_job_status"
+      | "generation_job_started_at"
+      | "generation_job_error"
+      | "content_size_bytes"
+    >
+  > {
+    const { data, error } = await this.supabase
+      .from("npcs")
+      .select(
+        "id, owner_id, generation_job_id, generation_job_status, generation_job_started_at, generation_job_error, content_size_bytes"
+      )
+      .eq("id", npcId)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      if (isForbiddenSupabaseError(error)) {
+        throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", { cause: error });
+      }
+
+      console.error("NpcService.fetchNpcForGenerationStatus", error);
+      throw new NpcServiceError("NPC_FETCH_FAILED", { cause: error });
+    }
+
+    if (!data) {
+      throw new NpcServiceError("NPC_NOT_FOUND", {
+        cause: new Error("NPC not found for generation status"),
+      });
+    }
+
+    if (data.owner_id !== ownerId) {
+      throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", {
+        cause: new Error("NPC does not belong to user"),
+      });
+    }
+
+    if (!data.generation_job_id || data.generation_job_id !== jobId) {
+      throw new NpcServiceError("NPC_NOT_FOUND", {
+        cause: new Error("Generation job does not exist for NPC"),
+      });
+    }
+
+    return data;
+  }
+
+  private async readMockXml(): Promise<string> {
+    try {
+      return await readFile(MOCK_XML_FILE_PATH, "utf8");
+    } catch (error) {
+      console.error("NpcService.readMockXml", error);
+      throw new NpcServiceError("XML_FETCH_FAILED", { cause: error });
+    }
+  }
+}
+
+function normalizeGenerationJobError(error: unknown): GenerationJobStatusResponseDto["error"] {
+  if (!error || typeof error !== "object") {
+    return null;
+  }
+
+  const candidate = error as Partial<{ code: unknown; message: unknown }>;
+  if (typeof candidate.code !== "string" || typeof candidate.message !== "string") {
+    return null;
+  }
+
+  if (!KNOWN_GENERATION_JOB_ERROR_CODES.has(candidate.code as GenerationJobErrorCode)) {
+    return null;
+  }
+
+  return {
+    code: candidate.code as GenerationJobErrorCode,
+    message: candidate.message,
+  };
 }
 
 function normalizeNpcListQuery(query: GetNpcListQueryDto): NormalizedGetNpcListQuery {
