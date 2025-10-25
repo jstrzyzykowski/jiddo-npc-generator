@@ -411,8 +411,8 @@
 
 - **Method**: `GET`
 - **Path**: `/npcs/{npcId}/keywords`
-- **Description**: Retrieve keyword entries with nested phrases for an NPC.
-- **Query Params**: `includeDeleted=true` (owner only), `limit`, `cursor` (for large sets).
+- **Description**: Retrieve active keyword entries with nested phrases for an NPC. Results respect Supabase RLS (public NPCs are visible to everyone; drafts remain visible only to owners).
+- **Query Params**: `limit` (integer, 1-100, optional; defaults to 20).
 - **Response JSON**:
 
 ```
@@ -428,13 +428,12 @@
       "createdAt": "ISO-8601",
       "updatedAt": "ISO-8601"
     }
-  ],
-  "pageInfo": { "nextCursor": "string|null" }
+  ]
 }
 ```
 
 - **Success Codes**: `200 OK`
-- **Error Codes**: `401 Unauthorized`, `403 Forbidden`, `404 Not Found`.
+- **Error Codes**: `400 Bad Request` (invalid parameters), `404 Not Found` (NPC not accessible), `500 Internal Server Error`.
 
 #### 2.4.2 Bulk Replace Keywords
 
@@ -457,7 +456,7 @@
 
 - **Response JSON**: The newly created list of keywords, including generated IDs for keywords and phrases.
 - **Success Codes**: `200 OK`
-- **Error Codes**: `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `409 Conflict` (limit exceeded or phrase conflict), `422 Unprocessable Entity`.
+- **Error Codes**: `400 Bad Request` (validation failure), `401 Unauthorized`, `403 Forbidden`, `404 Not Found` (NPC not accessible), `409 Conflict` (limit exceeded or phrase conflict), `500 Internal Server Error`.
 
 #### 2.4.3 Create Keyword (Post-MVP)
 

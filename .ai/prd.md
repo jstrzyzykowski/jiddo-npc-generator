@@ -18,7 +18,7 @@ Zakres MVP (skrót):
 - Katalog publiczny: HOME (Featured 10) + /npcs (SSR 100, infinite scroll).
 - Strona szczegółów NPC: metadane + podglądy XML/LUA (tekst, escapowany) + kopiowanie (przyciski kopiowania do schowka).
 - Shop (MVP): aktywny moduł; formularz buy/sell; limit ~255 pozycji; tryb trade window lub talk mode.
-- Keywords (MVP): aktywny moduł; w pełni znormalizowany system fraz (wiele fraz per odpowiedź), limity i walidacje.
+- Keywords (MVP): aktywny moduł; w pełni znormalizowany system fraz (wiele fraz per odpowiedź), limity i walidacje; API udostępnia zarówno odczyt (`GET /npcs/{npcId}/keywords`), jak i atomowe zastąpienie (`PUT /npcs/{npcId}/keywords`).
 - Telemetria: NPC Created, NPC Published; metryki TTFNPC i konwersja Create→Publish.
 
 Technologia (wysoki poziom, kontekst implementacyjny): Astro 5, TypeScript 5, React 19, Tailwind 4, shadcn/ui, Supabase (auth i storage), AI provider (np. OpenRouter) do generacji XML.
