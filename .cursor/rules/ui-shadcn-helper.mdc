@@ -1,8 +1,9 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: false
 ---
+
 # Shadcn UI Components
 
 Ten projekt wykorzystuje @shadcn/ui dla komponentów interfejsu użytkownika. Są to pięknie zaprojektowane, dostępne komponenty, które można dostosować do swojej aplikacji.
@@ -16,9 +17,9 @@ Komponenty są dostępne w folderze `src/components/ui`, zgodnie z aliasami z pl
 Zaimportuj komponent zgodnie ze skonfigurowanym aliasem `@/`
 
 ```tsx
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 ```
 
 Przykładowe wykorzsytanie komponnetów:
@@ -46,7 +47,6 @@ Wiele innych komponentów jest dostępnych, ale nie są one obecnie zainstalowan
 
 Aby zainstalować nowy komponent, wykorzystaj shadcn CLI
 
-
 ```bash
 npx shadcn@latest add [component-name]
 ```
@@ -59,40 +59,67 @@ npx shadcn@latest add accordion
 
 Ważne: `npx shadcn-ui@latest` zostało wycofane, korzystaj z `npx shadcn@latest`
 
-Niektóre popularne komponenty to:
+**Pełna lista komponentów dostępnych w shadcn/ui:**
 
 - Accordion
 - Alert
 - AlertDialog
 - AspectRatio
 - Avatar
+- Badge
+- Breadcrumb
+- Button
+- Button Group (nowy komponent)
 - Calendar
+- Card
+- Carousel
+- Chart
 - Checkbox
 - Collapsible
+- Combobox
 - Command
 - ContextMenu
 - DataTable
 - DatePicker
+- Dialog
+- Drawer
 - Dropdown Menu
+- Empty (nowy komponent)
+- Field (nowy komponent)
 - Form
 - Hover Card
+- Input
+- Input Group (nowy komponent)
+- Input OTP
+- Item (nowy komponent)
+- Kbd (nowy komponent)
+- Label
 - Menubar
+- Native Select (nowy komponent)
 - Navigation Menu
+- Pagination
 - Popover
 - Progress
 - Radio Group
+- Resizable
 - ScrollArea
 - Select
 - Separator
 - Sheet
+- Sidebar
 - Skeleton
 - Slider
+- Sonner (previously Toast)
+- Spinner (nowy komponent)
 - Switch
 - Table
+- Tabs
 - Textarea
-- Sonner (previously Toast)
+- Toast
 - Toggle
+- Toggle Group
 - Tooltip
+- Typography
 
 ## Component Styling
 
