@@ -58,8 +58,16 @@ Podstawowa powłoka aplikacji, w której renderowane są wszystkie inne widoki. 
 Widok z formularzem umożliwiającym rozpoczęcie procesu uwierzytelniania przez "magic link".
 
 - **Powiązane historyjki użytkownika:**
-  - `US-001: Logowanie linkiem Magic Link`
-  - `US-020: Błąd/wygaśnięcie Magic Link` (częściowo: UI do inicjacji procesu)
+  - `US-001: Logowanie linkiem Magic Link`: "Jako użytkownik chcę otrzymać link logujący na e‑mail, aby zalogować się bez hasła."
+    - **Kryteria akceptacji:**
+      - Formularz przyjmuje e‑mail i wysyła Magic Link z TTL linku.
+      - Po wysłaniu wyświetla się informacja o wysłaniu linku.
+      - Błędny e‑mail lub błąd wysyłki prezentuje czytelny komunikat.
+  - `US-020: Błąd/wygaśnięcie Magic Link`: "Jako użytkownik chcę zobaczyć jasny komunikat, gdy link jest nieważny lub wygasł."
+    - **Kryteria akceptacji:**
+      - Link po TTL linku zwraca błąd lub wygasł i proponuje wysłanie nowego.
+      - Nie dochodzi do zalogowania ani utworzenia sesji.
+      - Obsługa wielokrotnego kliknięcia linku nie powoduje błędów aplikacji.
 - **Powiązane endpointy API:**
   - Brak (interakcja z biblioteką kliencką Supabase `supabase.auth.signInWithOtp`)
 - **Pliki implementacji endpointów:**
