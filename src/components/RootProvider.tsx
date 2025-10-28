@@ -2,6 +2,7 @@ import { ArrowUp } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Toaster } from "@/components/ui/sonner";
 
 import { AuthProvider } from "./auth/AuthProvider";
 import { Footer } from "./layout/Footer";
@@ -61,7 +62,7 @@ export function RootProvider({ currentPath, children }: RootProviderProps) {
       <div className="relative flex min-h-screen flex-col bg-background text-foreground">
         <Topbar />
         <SecondaryNavbar currentPath={currentPath} isVisible={isSecondaryVisible} />
-        <main className="flex-1">{children}</main>
+        <main className="flex flex-1 flex-col">{children}</main>
         <Footer isVisible={isFooterVisible} />
 
         {showScrollTop && !isFooterVisible ? (
@@ -76,6 +77,7 @@ export function RootProvider({ currentPath, children }: RootProviderProps) {
           </Button>
         ) : null}
       </div>
+      <Toaster position="top-center" richColors closeButton />
     </AuthProvider>
   );
 }

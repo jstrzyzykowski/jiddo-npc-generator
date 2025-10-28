@@ -1,0 +1,8 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { LoginApp } from "@/components/pages/login/LoginApp";
+---
+
+<Layout title="Log In | Jiddo NPC Generator">
+  <LoginApp client:load currentPath={Astro.url.pathname} />
+</Layout>
