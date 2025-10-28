@@ -27,7 +27,7 @@ For full product requirements, see the PRD.
 ## 3. Tech stack
 
 - Frontend: Astro 5 (with React 19 islands), TypeScript 5, Tailwind CSS 4, shadcn/ui
-- Runtime/libs: `@astrojs/react`, `@astrojs/node`, `lucide-react`, `class-variance-authority`, `clsx`, `tailwind-merge`
+- Runtime/libs: `@astrojs/react`, `@astrojs/node`, `@supabase/supabase-js`, `lucide-react`, `class-variance-authority`, `clsx`, `tailwind-merge`
 - Backend: Supabase (Auth, Database, Storage)
 - AI provider: OpenRouter.ai (access to multiple model vendors)
 - Tooling: ESLint 9, Prettier (with `prettier-plugin-astro`)
@@ -87,20 +87,26 @@ npm run format
 ```text
 ./
 ├─ src/
-│  ├─ layouts/           # Astro layouts
-│  ├─ pages/             # Astro pages (routes)
-│  │  └─ api/             # API server endpoints
+│  ├─ assets/            # Static project assets (mocks, Lua scripts)
 │  ├─ components/        # UI components (Astro + React)
-│  │  └─ ui/             # shadcn/ui components
-│  ├─ lib/               # Helpers, services, and validators
-│  ├─ styles/            # Global styles
-│  ├─ db/                # Supabase clients and types
+│  │  ├─ auth/            # Auth context, provider, and hook
+│  │  ├─ layout/          # Global layout components (Topbar, Footer, etc.)
+│  │  ├─ pages/           # Page-specific root components
+│  │  └─ ui/              # Reusable UI components (from shadcn/ui)
+│  ├─ db/                # Supabase client and generated database types
+│  ├─ layouts/           # Astro layouts (.astro)
+│  ├─ lib/               # Business logic and helpers
+│  │  ├─ services/        # Services for API communication
+│  │  └─ validators/      # Zod validation schemas
 │  ├─ middleware/        # Astro middleware
-│  └─ assets/            # Static project assets
-├─ public/               # Static assets
-├─ supabase/             # Supabase migrations
-├─ spec/                 # Product/research docs
-└─ .ai/                  # PRD and tech stack docs
+│  ├─ pages/             # Astro pages and API endpoints
+│  │  └─ api/             # Server-side API routes
+│  ├─ styles/            # Global styles
+│  └─ types.ts           # Shared application type definitions
+├─ public/               # Publicly served assets (e.g., favicon)
+├─ supabase/             # Supabase database migrations
+├─ spec/                 # Product specifications and research
+└─ .ai/                  # AI-related docs (PRD, planning)
 ```
 
 ## 5. Available scripts

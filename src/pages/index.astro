@@ -1,8 +1,8 @@
 ---
-import Welcome from "../components/Welcome.astro";
-import Layout from "../layouts/Layout.astro";
+import Layout from "@/layouts/Layout.astro";
+import { HomeApp } from "@/components/pages/home/HomeApp";
 ---
 
-<Layout>
-  <Welcome />
+<Layout title="Jiddo NPC Generator | Community Driven Open Tibia NPC Generator">
+  <HomeApp client:load currentPath={Astro.url.pathname} />
 </Layout>

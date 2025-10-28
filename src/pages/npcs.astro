@@ -1,0 +1,8 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { NpcsApp } from "@/components/pages/npcs/NpcsApp";
+---
+
+<Layout title="NPC Directory">
+  <NpcsApp client:load currentPath={Astro.url.pathname} />
+</Layout>
