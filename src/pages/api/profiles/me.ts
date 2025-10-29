@@ -61,26 +61,20 @@ const ERROR_DETAILS: Record<ErrorCode, { status: number; message: string }> = {
 
 export const GET: APIRoute = async ({ locals }) => {
   const supabase = locals.supabase;
-  const session = locals.session;
 
   if (!supabase) {
     return createErrorResponse("SUPABASE_NOT_INITIALIZED");
   }
 
-  if (!session) {
-    return createErrorResponse("UNAUTHORIZED");
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error) {
+    return createErrorResponse("UNAUTHORIZED", { cause: error });
   }
 
-  const authResponse = await supabase.auth.getUser();
-  if (authResponse.error) {
-    if (isForbiddenSupabaseError(authResponse.error)) {
-      return createErrorResponse("FORBIDDEN", { cause: authResponse.error });
-    }
-
-    return createErrorResponse("UNAUTHORIZED", { cause: authResponse.error });
-  }
-
-  const user = authResponse.data.user;
   if (!user) {
     return createErrorResponse("UNAUTHORIZED");
   }
@@ -122,26 +116,4 @@ function createErrorResponse(code: ErrorCode, options?: { cause?: unknown }): Re
       headers: JSON_HEADERS,
     }
   );
-}
-
-function isForbiddenSupabaseError(error: unknown): boolean {
-  if (!error || typeof error !== "object") {
-    return false;
-  }
-
-  const candidate = error as { status?: number; code?: string; message?: string };
-
-  if (candidate.status === 403) {
-    return true;
-  }
-
-  if (typeof candidate.code === "string" && ["PGRST116", "PGRST301"].includes(candidate.code)) {
-    return true;
-  }
-
-  if (typeof candidate.message === "string" && candidate.message.toLowerCase().includes("permission denied")) {
-    return true;
-  }
-
-  return false;
 }

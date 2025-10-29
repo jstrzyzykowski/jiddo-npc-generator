@@ -23,7 +23,7 @@ export function UserNav() {
     .toUpperCase();
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Avatar className="size-9 cursor-pointer">
           <AvatarFallback>{initials}</AvatarFallback>

@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient as SupabaseJsClient } from "@supabase/supabase-js";
 
 import type { Database } from "./database.types";
@@ -8,4 +8,4 @@ export type SupabaseClient = SupabaseJsClient<Database>;
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const supabasePublishableKey = import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-export const supabaseClient = createClient<Database>(supabaseUrl, supabasePublishableKey);
+export const supabaseClient = createBrowserClient<Database>(supabaseUrl, supabasePublishableKey);

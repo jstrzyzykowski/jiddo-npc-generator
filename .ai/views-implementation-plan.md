@@ -97,8 +97,16 @@ Widok z formularzem umożliwiającym rozpoczęcie procesu uwierzytelniania przez
 Widok przejściowy, który obsługuje token z "magic link", finalizuje proces logowania i tworzy sesję użytkownika.
 
 - **Powiązane historyjki użytkownika:**
-  - `US-002: Wejście przez Magic Link`
-  - `US-020: Błąd/wygaśnięcie Magic Link` (częściowo: obsługa wyniku kliknięcia w link)
+  - `US-002: Wejście przez Magic Link`: "Jako użytkownik chcę zalogować się po kliknięciu w Magic Link, aby uzyskać dostęp do kreatora i moich NPC."
+    - **Kryteria akceptacji:**
+      - Prawidłowy link loguje użytkownika i ustawia sesję.
+      - Wygasły lub nieważny link zwraca błąd i proponuje ponowne wysłanie.
+      - Po zalogowaniu następuje redirect na stronę główną (`/`).
+  - `US-020: Błąd/wygaśnięcie Magic Link`: "Jako użytkownik chcę zobaczyć jasny komunikat, gdy link jest nieważny lub wygasł."
+    - **Kryteria akceptacji:**
+      - Link po TTL linku zwraca błąd lub wygasł i proponuje wysłanie nowego.
+      - Nie dochodzi do zalogowania ani utworzenia sesji.
+      - Obsługa wielokrotnego kliknięcia linku nie powoduje błędów aplikacji.
 - **Powiązane endpointy API:**
   - Brak (interakcja z biblioteką kliencką Supabase w celu weryfikacji sesji)
 - **Pliki implementacji endpointów:**

@@ -9,10 +9,6 @@ declare global {
       session: Awaited<ReturnType<SupabaseClient["auth"]["getSession"]>>["data"]["session"] | null;
     }
   }
-
-  interface Window {
-    supabase: SupabaseClient;
-  }
 }
 
 interface ImportMetaEnv {

@@ -1,0 +1,8 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import AuthCallback from "@/components/pages/auth/AuthCallback";
+---
+
+<Layout title="Authenticating... | Jiddo NPC Generator">
+  <AuthCallback client:load currentPath={Astro.url.pathname} />
+</Layout>
