@@ -207,10 +207,33 @@ Publiczna lista wszystkich opublikowanych NPC z możliwością paginacji (infini
 Publiczny widok szczegółowych informacji o pojedynczym NPC, zawierający jego metadane oraz podgląd kodu XML i Lua.
 
 - **Powiązane historyjki użytkownika:**
-  - `US-011: Strona szczegółów NPC (publiczna)`
-  - `US-007: Publikacja NPC` (częściowo: zawiera przycisk "Publikuj" dla właściciela)
-  - `US-008: Soft delete NPC` (częściowo: zawiera przycisk "Usuń" dla właściciela)
-  - `US-018: Kopiowanie XML i default.lua do schowka`
+  - **`US-011: Strona szczegółów NPC (publiczna)`**
+    - **Opis:** Jako odwiedzający chcę zobaczyć metadane i podglądy XML/LUA oraz móc skopiować treść.
+    - **Kryteria akceptacji:**
+      - Układ strony jest dwukolumnowy: po lewej metadane (nazwa, autor, status, daty, moduły), po prawej panele z kodem w zakładkach.
+      - W prawej kolumnie znajdują się dwa panele w zakładkach z podglądem kodu XML oraz `default.lua`.
+      - Podglądy kodu są poprawnie escapowane.
+      - Dla gości oraz użytkowników niebędących właścicielami, akcje takie jak "Edytuj", "Publikuj", "Usuń" nie są widoczne.
+  - **`US-007: Publikacja NPC`**
+    - **Opis:** Jako właściciel chcę opublikować gotowego NPC, aby był widoczny publicznie.
+    - **Kryteria akceptacji:**
+      - Przycisk "Publikuj" jest dostępny w menu akcji dla właściciela, jeśli NPC jest w stanie roboczym (`draft`).
+      - Przed publikacją system weryfikuje integralność danych (nazwa, wygląd, zawartość aktywnych modułów, status `deleted_at`).
+      - Po pomyślnej walidacji, status NPC zmienia się na `published` i staje się on widoczny publicznie.
+      - W przypadku błędu walidacji, użytkownik otrzymuje jasny komunikat o przyczynie.
+  - **`US-008: Soft delete NPC`**
+    - **Opis:** Jako właściciel chcę miękko usunąć NPC, aby przestał być widoczny publicznie bez trwałego kasowania danych.
+    - **Kryteria akceptacji:**
+      - Przycisk "Usuń" jest dostępny w menu akcji dla właściciela.
+      - Kliknięcie "Usuń" uruchamia modalne okno dialogowe z prośbą o potwierdzenie i opcjonalnym polem na powód.
+      - Po potwierdzeniu, NPC i jego powiązane dane są oznaczane jako usunięte (`deleted_at`), co ukrywa go z publicznych list.
+      - Zdarzenie usunięcia jest rejestrowane w telemetrii.
+  - **`US-018: Kopiowanie XML i default.lua do schowka`**
+    - **Opis:** Jako użytkownik chcę szybko skopiować zawartości podglądów XML i Lua.
+    - **Kryteria akceptacji:**
+      - Każdy panel podglądu kodu (XML i Lua) ma dedykowany przycisk "Kopiuj".
+      - Kliknięcie przycisku kopiuje zawartość do schowka i sygnalizuje sukces.
+      - Jeśli zawartość przekracza 256 KB, kopiowanie jest zablokowane i wyświetlany jest komunikat o błędzie.
 - **Powiązane endpointy API:**
   - `GET /npcs/{npcId}`: Pobranie pełnych danych konkretnego NPC.
   - `POST /npcs/{npcId}/publish`: Publikacja NPC (akcja wywoływana z tego widoku).
