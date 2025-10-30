@@ -192,7 +192,7 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
             <HoverCardContent side="top" className="w-72 space-y-3">
               <div>
                 <p className="text-sm font-semibold text-foreground">{npc.name}</p>
-                <p className="text-xs text-muted-foreground">Twórca: {ownerName}</p>
+                <p className="text-xs text-muted-foreground">{ownerName}</p>
               </div>
               <dl className="grid grid-cols-1 gap-2 text-xs">
                 <div className="flex items-center justify-between">
