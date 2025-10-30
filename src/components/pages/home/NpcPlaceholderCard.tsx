@@ -8,7 +8,7 @@ interface NpcPlaceholderCardProps {
 
 export function NpcPlaceholderCard({ label = "Upcoming NPC" }: NpcPlaceholderCardProps) {
   return (
-    <Card className="group flex h-full min-h-[340px] flex-col items-center justify-center border border-dashed border-muted-foreground/30 bg-muted/10 transition-colors duration-200 hover:bg-muted/20">
+    <Card className="group flex h-full min-h-[392px] flex-col items-center justify-center border border-dashed border-muted-foreground/30 bg-muted/10 transition-colors duration-200 hover:bg-muted/20">
       <img
         src={npcPlaceholder.src}
         alt="Upcoming NPC placeholder"

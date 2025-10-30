@@ -803,7 +803,7 @@ export class NpcService {
 
     const { data, error } = await this.supabase
       .from("npcs")
-      .select("id, deleted_at")
+      .select("id, status, deleted_at")
       .eq("id", npcId)
       .eq("owner_id", userId)
       .maybeSingle();
@@ -829,7 +829,19 @@ export class NpcService {
       });
     }
 
-    const { error: updateError } = await this.supabase.from("npcs").update({ deleted_at: now }).eq("id", npcId);
+    const updatePayload: Database["public"]["Tables"]["npcs"]["Update"] = {
+      deleted_at: now,
+    };
+
+    if (data.status === "published") {
+      updatePayload.status = "draft";
+    }
+
+    const { error: updateError } = await this.supabase
+      .from("npcs")
+      .update(updatePayload)
+      .eq("id", npcId)
+      .eq("owner_id", userId);
 
     if (updateError) {
       if (isForbiddenSupabaseError(updateError)) {

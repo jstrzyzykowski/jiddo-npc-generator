@@ -4,9 +4,9 @@ globs:
 alwaysApply: true
 ---
 
-# AI Rules for Jiddo NPC Generator
+# AI Rules for Jido NPC Generator
 
-Jiddo NPC Generator to aplikacja ułatwiająca projektowanie i generowanie plików NPC dla serwerów Open Tibia w systemie Jiddo (TFS ≤ 1.5). Celem jest znaczące skrócenie czasu tworzenia NPC przez eliminację ręcznego pisania plików XML i skryptów LUA w przypadku prostych zastosowań. W MVP AI generuje wyłącznie plik XML na podstawie wprowadzonych parametrów, a skrypt LUA jest wspólnym domyślnym plikiem default.lua; aplikacja nie udostępnia edycji manualnej XML ani Lua.
+Jido NPC Generator is an application that facilitates the design and generation of NPC files for Open Tibia servers using the Jido system (TFS ≤ 1.5). The goal is to significantly reduce the time required to create NPCs by eliminating the manual writing of XML files and LUA scripts for simple use cases. In the MVP, the AI generates only the XML file based on the provided parameters, and the LUA script is a common default file, default.lua; the application does not provide manual editing of XML or Lua.
 
 ## Tech Stack
 
@@ -15,29 +15,37 @@ Jiddo NPC Generator to aplikacja ułatwiająca projektowanie i generowanie plik�
 - React 19
 - Tailwind 4
 - Shadcn/ui
+- Supabase
 
 ## Preferred libraries
 
 - react-hook-form
 - zod + zodResolver
 - Lucide Icons
+- Supabase Client
 
 ## Project Structure
 
 When introducing changes to the project, always follow the directory structure below:
 
 - `./src` - source code
+- `./src/assets` - static internal assets (images, default scripts)
+- `./src/components` - Client-side components (Astro for static, React for dynamic)
+- `./src/components/features` - Components related to specific application features (e.g., NPC)
+- `./src/components/layout` - Components responsible for the global application layout
+- `./src/components/pages` - Components used on specific pages
+- `./src/components/ui` - Components from Shadcn/ui
+- `./src/db` - Supabase clients and generated database types
+- `./src/hooks` - Custom React hooks
 - `./src/layouts` - Astro layouts
-- `./src/pages` - Astro pages
+- `./src/lib` - Services, helpers, and validators
+- `./src/middleware` - Astro middleware
+- `./src/pages` - Astro pages (routes)
 - `./src/pages/api` - API endpoints
-- `./src/middleware/index.ts` - Astro middleware
-- `./src/db` - Supabase clients and types
+- `./src/styles` - Global styles
 - `./src/types.ts` - Shared types for backend and frontend (Entities, DTOs)
-- `./src/components` - Client-side components written in Astro (static) and React (dynamic)
-- `./src/components/ui` - Client-side components from Shadcn/ui
-- `./src/lib` - Services and helpers
-- `./src/assets` - static internal assets
-- `./public` - public assets
+- `./public` - Publicly accessible assets
+- `./supabase/migrations` - Supabase database migration scripts
 
 When modifying the directory structure, always update this section.
 
@@ -50,7 +58,7 @@ When modifying the directory structure, always update this section.
 - Handle errors and edge cases at the beginning of functions.
 - Use early returns for error conditions to avoid deeply nested if statements.
 - Place the happy path last in the function for improved readability.
-- Avoid unnecessary else statements; use if-return pattern instead.
+- Avoid unnecessary else statements; use an if-return pattern instead.
 - Use guard clauses to handle preconditions and invalid states early.
 - Implement proper error logging and user-friendly error messages.
 - Consider using custom error types or error factories for consistent error handling.

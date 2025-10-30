@@ -168,7 +168,11 @@ Strona powitalna aplikacji, prezentująca wyróżnione, ostatnio opublikowane NP
 Publiczna lista wszystkich opublikowanych NPC z możliwością paginacji (infinite scroll), sortowania i filtrowania.
 
 - **Powiązane historyjki użytkownika:**
-  - `US-010: /npcs – przeglądanie z infinite scroll`
+  - `US-010: /npcs – przeglądanie z infinite scroll`: "Jako użytkownik chcę przeglądać listę NPC w sposób płynny i ciągły, bez potrzeby przechodzenia na kolejne strony, aby szybko znaleźć interesujące mnie NPC."
+    - **Kryteria akceptacji:**
+      - Pierwsze X rekordów SSR; kolejne strony ładują się kursorowo (infinite scroll) bez duplikacji rekordów.
+      - Ładowanie nie duplikuje rekordów; koniec listy sygnalizowany komunikatem.
+      - Błędy sieciowe wyświetlają komunikat i umożliwiają ponowienie.
 - **Powiązane endpointy API:**
   - `GET /npcs`: Pobranie publicznej, paginowanej listy NPC.
 - **Pliki implementacji endpointów:**

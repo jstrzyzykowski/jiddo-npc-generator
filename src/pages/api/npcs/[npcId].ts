@@ -213,7 +213,35 @@ export const DELETE: APIRoute = async ({ locals, params, request }) => {
   }
 
   const url = new URL(request.url);
-  const reason = url.searchParams.get("reason") ?? undefined;
+  const searchReason = url.searchParams.get("reason") ?? undefined;
+
+  const contentType = request.headers.get("content-type")?.toLowerCase() ?? null;
+  let bodyReason: unknown = undefined;
+
+  if (contentType && contentType.includes("application/json")) {
+    let payload: unknown;
+
+    try {
+      payload = await request.json();
+    } catch (error) {
+      return createErrorResponse("INVALID_BODY", {
+        cause: error,
+        details: {
+          message: "Request body must be valid JSON.",
+        },
+      });
+    }
+
+    if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+      return createErrorResponse("INVALID_BODY", {
+        details: {
+          message: "Request body must be a JSON object.",
+        },
+      });
+    }
+
+    bodyReason = (payload as Record<string, unknown>).reason;
+  }
 
   const validationResult = (() => {
     try {
@@ -221,7 +249,7 @@ export const DELETE: APIRoute = async ({ locals, params, request }) => {
         success: true,
         data: validateDeleteNpcParams({
           npcId: params.npcId,
-          reason,
+          reason: bodyReason ?? searchReason,
         }),
       } as const;
     } catch (error) {

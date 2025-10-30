@@ -1,5 +1,5 @@
 import { createRootPage } from "@/components/AppShell";
 
-import NpcsPage from "./NpcsPage";
+import NpcsPage, { type NpcsPageProps } from "./NpcsPage";
 
-export const NpcsApp = createRootPage(NpcsPage);
+export const NpcsApp = createRootPage<NpcsPageProps>(NpcsPage);

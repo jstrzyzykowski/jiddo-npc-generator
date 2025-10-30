@@ -1,5 +1,4 @@
-import { useMemo } from "react";
-import { Home, Layers3, SlidersHorizontal } from "lucide-react";
+import { Home, Layers3, SlidersHorizontal, Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +8,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { SORT_OPTIONS } from "@/components/features/npc/list/config";
+import { useOptionalNpcListContext } from "@/components/features/npc/list/NpcListProvider";
 
 interface SecondaryNavbarProps {
   currentPath: string;
@@ -17,14 +18,8 @@ interface SecondaryNavbarProps {
 
 export function SecondaryNavbar({ currentPath, isVisible }: SecondaryNavbarProps) {
   const isNpcPage = currentPath.startsWith("/npcs");
-
-  const sortOptions = useMemo(
-    () => [
-      { label: "Newest", value: "published_at:desc" },
-      { label: "Oldest", value: "published_at:asc" },
-    ],
-    []
-  );
+  const npcListContext = useOptionalNpcListContext();
+  const selectedSortLabel = npcListContext?.sort.label ?? "Sortowanie";
 
   return (
     <nav
@@ -66,26 +61,31 @@ export function SecondaryNavbar({ currentPath, isVisible }: SecondaryNavbarProps
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2">
                   <SlidersHorizontal className="size-4" />
-                  Sort
+                  {selectedSortLabel}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {sortOptions.map((option) => (
-                  <DropdownMenuItem key={option.value}>{option.label}</DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                {SORT_OPTIONS.map((option) => {
+                  const isActive = npcListContext?.sort.value === option.value;
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  Filter
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem disabled>This week</DropdownMenuItem>
-                <DropdownMenuItem disabled>This month</DropdownMenuItem>
-                <DropdownMenuItem disabled>This year</DropdownMenuItem>
+                  return (
+                    <DropdownMenuItem
+                      key={option.value}
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        if (!npcListContext) {
+                          return;
+                        }
+
+                        npcListContext.setSort(option);
+                      }}
+                      className={cn("flex items-center gap-2", isActive ? "font-semibold" : undefined)}
+                    >
+                      {option.label}
+                      {isActive ? <Check className="ml-auto size-4" aria-hidden="true" /> : null}
+                    </DropdownMenuItem>
+                  );
+                })}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

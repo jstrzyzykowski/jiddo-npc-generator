@@ -1,8 +1,87 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { NpcsApp } from "@/components/pages/npcs/NpcsApp";
+import { createNpcListQuery, resolveFilterTag, resolveSortOption } from "@/components/features/npc/list/config";
+import { NpcService } from "@/lib/services/npcService";
+import type { GetNpcListResponseDto } from "@/types";
+
+export const prerender = false;
+
+const searchParams = Astro.url.searchParams;
+const initialSort = resolveSortOption(searchParams);
+const initialFilter = resolveFilterTag(searchParams);
+
+const cursorParam = searchParams.get("cursor");
+const limitParam = searchParams.get("limit");
+const searchParam = sanitizeSearchParam(searchParams.get("search"));
+
+const overrides = {
+  cursor: cursorParam ?? undefined,
+  limit: parseLimitParam(limitParam),
+  search: searchParam,
+} as const;
+
+const supabase = Astro.locals.supabase;
+const session = Astro.locals.session;
+
+const EMPTY_RESPONSE: GetNpcListResponseDto = {
+  items: [],
+  pageInfo: {
+    nextCursor: null,
+    total: null,
+  },
+};
+
+let initialData: GetNpcListResponseDto = EMPTY_RESPONSE;
+let initialError: string | null = null;
+
+if (!supabase) {
+  initialError = "Supabase client is not available.";
+} else {
+  const query = createNpcListQuery(initialSort, initialFilter, overrides);
+  const npcService = new NpcService(supabase);
+
+  try {
+    const userId = session?.user?.id ?? null;
+    initialData = await npcService.getNpcList(query, userId);
+  } catch (error) {
+    console.error("/npcs initial load", error);
+    initialData = EMPTY_RESPONSE;
+    initialError = "Nie udało się pobrać listy NPC.";
+  }
+}
+
+function parseLimitParam(value: string | null): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
+
+  return parsed;
+}
+
+function sanitizeSearchParam(value: string | null): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
 ---
 
 <Layout title="NPC Directory">
-  <NpcsApp client:load currentPath={Astro.url.pathname} />
+  <NpcsApp
+    client:load
+    currentPath={Astro.url.pathname}
+    initialSort={initialSort}
+    initialFilter={initialFilter}
+    initialData={initialData}
+    initialError={initialError}
+  />
 </Layout>
