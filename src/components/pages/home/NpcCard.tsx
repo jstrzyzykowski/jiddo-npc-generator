@@ -1,15 +1,7 @@
-import { CircleHelp, EllipsisVertical, MessageSquareText, ShoppingBag } from "lucide-react";
-import { useCallback, useState } from "react";
+import { CircleHelp, MessageSquareText, ShoppingBag } from "lucide-react";
+import { useCallback } from "react";
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-import DeleteNpcModal from "@/components/features/npc/modal/DeleteNpcModal";
+import { NpcOwnerActions } from "@/components/features/npc/actions/NpcOwnerActions";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -28,8 +20,6 @@ interface NpcCardProps {
 export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
   const { user } = useAuth();
   const isOwner = user?.id === npc.owner.id;
-  const [isPublishing, setPublishing] = useState(false);
-  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const handleRefresh = useCallback(async () => {
     if (!onRefresh) {
@@ -48,11 +38,9 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
   const modules = buildModules(npc.modules);
 
   const handlePublish = async () => {
-    if (npc.status === "published" || isPublishing) {
+    if (npc.status === "published") {
       return;
     }
-
-    setPublishing(true);
 
     try {
       const response = await fetch(`/api/npcs/${npc.id}/publish`, {
@@ -64,17 +52,15 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
 
       if (!response.ok) {
         const errorBody = await response.json().catch(() => null);
-        const message = errorBody?.error?.message ?? "Nie udało się opublikować NPC.";
+        const message = errorBody?.error?.message ?? "Failed to publish the NPC.";
         throw new Error(message);
       }
 
-      toast.success("NPC został opublikowany.");
+      toast.success("NPC has been published.");
       await handleRefresh();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Nie udało się opublikować NPC.";
+      const message = error instanceof Error ? error.message : "Failed to publish the NPC.";
       toast.error(message);
-    } finally {
-      setPublishing(false);
     }
   };
 
@@ -85,52 +71,16 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
         className
       )}
     >
-      <DeleteNpcModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        npcId={npc.id}
-        npcName={npc.name}
-        onSuccess={handleRefresh}
+      <NpcOwnerActions
+        npc={{ id: npc.id, name: npc.name, status: npc.status }}
+        isOwner={isOwner}
+        triggerClassName="absolute right-3 top-3 z-20"
+        onEdit={() => {
+          window.location.href = `/creator/${npc.id}`;
+        }}
+        onPublish={handlePublish}
+        onDeleteSuccess={handleRefresh}
       />
-      {isOwner ? (
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="absolute right-3 top-3 z-20 inline-flex size-8 items-center justify-center rounded-full bg-background/80 text-muted-foreground shadow transition-colors hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              aria-label="Akcje właściciela"
-            >
-              <EllipsisVertical className="size-4" aria-hidden="true" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" sideOffset={8} className="w-44">
-            <DropdownMenuItem asChild>
-              <a href={`/creator/${npc.id}`}>Edytuj</a>
-            </DropdownMenuItem>
-            {npc.status !== "published" ? (
-              <DropdownMenuItem
-                disabled={isPublishing}
-                onSelect={(event) => {
-                  event.preventDefault();
-                  handlePublish();
-                }}
-              >
-                {isPublishing ? "Publikowanie..." : "Publikuj"}
-              </DropdownMenuItem>
-            ) : null}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={(event) => {
-                event.preventDefault();
-                setDeleteModalOpen(true);
-              }}
-              className="text-destructive focus:text-destructive"
-            >
-              Usuń
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : null}
 
       <a
         href={`/npcs/${npc.id}`}
@@ -184,7 +134,7 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
             <HoverCardTrigger asChild>
               <span
                 className="inline-flex size-8 items-center justify-center rounded-full bg-background/80 text-muted-foreground shadow transition-colors hover:text-primary"
-                aria-label="Szczegóły NPC"
+                aria-label="NPC details"
               >
                 <CircleHelp className="size-4" aria-hidden="true" />
               </span>

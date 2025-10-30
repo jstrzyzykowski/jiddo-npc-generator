@@ -1,0 +1,16 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { NpcDetailApp } from "@/components/pages/npcs/detail/NpcDetailApp";
+
+export const prerender = false;
+
+const npcId = Astro.params.npcId;
+
+if (!npcId) {
+  throw new Error("NPC ID is required.");
+}
+---
+
+<Layout title="NPC Detail">
+  <NpcDetailApp client:load currentPath={Astro.url.pathname} npcId={npcId} />
+</Layout>
