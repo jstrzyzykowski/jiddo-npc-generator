@@ -68,9 +68,12 @@ Kluczowym założeniem architektury jest dynamiczne dostosowywanie interfejsu do
 
 - **Ścieżka:** `/profile/{userId}`
 - **Główny cel:** Umożliwienie użytkownikowi przeglądania swojego profilu oraz zarządzania stworzonymi przez siebie NPC.
-- **Kluczowe informacje:** Dane użytkownika, listy jego NPC (wersje robocze i opublikowane).
+- **Kluczowe informacje:** Dane użytkownika, sub-menu z zakładką `NPCs`, tagi oraz dodatkowo zakładki `Published` i `Drafts` zawierające listy jego NPC (wersje robocze i opublikowane).
 - **Kluczowe komponenty:** `ProfileAside` (dane użytkownika), `Tabs` (Wersje robocze/Opublikowane), `NpcGrid`, `NpcCard`, `EmptyState` (powitalny dla nowych użytkowników).
-- **UX, dostępność, bezpieczeństwo:** Widok dostępny tylko dla zalogowanych użytkowników. Nowi użytkownicy są witani komunikatem z CTA do stworzenia pierwszego NPC.
+- **UX, dostępność, bezpieczeństwo:** Widok dostępny tylko dla zalogowanych użytkowników. Nowi użytkownicy są witani komunikatem z CTA do stworzenia pierwszego NPC. Aby widzieć zakładki, musimy najpierw wybrać "NPCs" z paska pod nawigacją. Po wybraniu "NPCs", widok przełącza się na widok listy NPC z zakładkami `Published` i `Drafts`.
+- **Karta `Published`**: Wyświetla listę NPC opublikowanych przez użytkownika.
+- **Karta `Drafts`**: Wyświetla listę NPC w wersji roboczej należących do użytkownika.
+  Podobnie jak na **liście wszystkich NPC** (`/npcs`), widok `Drafts` i `Published` obsługuje paginację (infinite scroll) i filtrowanie po tagach. Dostępne są także filtry od najnowszych do najstarszych NPC oraz filtry po tagach.
 
 ## 3. Mapa podróży użytkownika
 

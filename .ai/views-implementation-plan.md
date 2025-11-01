@@ -277,9 +277,10 @@ Publiczny widok szczegółowych informacji o pojedynczym NPC, zawierający jego 
 ## 7. Profil Użytkownika (User Profile)
 
 Prywatny widok dla zalogowanego użytkownika, prezentujący jego dane oraz listy stworzonych przez niego NPC.
+Dostęp do profilu przez link w menu użytkownika (`Your Profile`) w górnym pasku nawigacji.
 
 - **Powiązane historyjki użytkownika:**
-  - **`Nowa US-025: Przeglądanie profilu użytkownika`**: "Jako zalogowany użytkownik, chcę mieć stronę profilu, gdzie mogę zobaczyć swoje dane oraz listy moich NPC w wersjach roboczych i opublikowanych, aby móc zarządzać swoimi pracami."
+  - **`Nowa US-025: Przeglądanie profilu użytkownika`**: "Jako zalogowany użytkownik, chcę mieć stronę profilu, gdzie mogę zobaczyć swoje dane oraz pasek sub-menu z zakładką `NPCs`. Po wybraniu `NPCs`, mam dostęp do tagów `Wersje robocze` i `Opublikowane`."
 - **Powiązane endpointy API:**
   - `GET /profiles/me`: Pobranie danych profilowych użytkownika.
   - `GET /npcs?visibility=mine&status=draft`: Pobranie listy NPC roboczych należących do użytkownika.
@@ -296,13 +297,13 @@ Prywatny widok dla zalogowanego użytkownika, prezentujący jego dane oraz listy
   - **`US-P-02:`** Jako użytkownik, chcę mieć możliwość przełączania się za pomocą zakładek między listą moich NPC w wersji roboczej a tymi już opublikowanymi.
     - **Kryteria akceptacji:**
       - Najpierw muszę wybrać kategorię "NPCs" z paska pod nawigacją (obok nazwy kategorii jest liczba elementów w kategorii - w tym wypadku liczba wszystkich utworzonych przez użytkownika NPC's).
-      - Na stronie profilu w obszarze zawartości dla widoku NPCs, znajduje się komponent z zakładkami "Wersje robocze" ("Drafts") i "Opublikowane" ("Published").
+      - Na stronie profilu w obszarze zawartości dla widoku NPCs, znajduje się komponent zakładek `Published` i `Drafts`.
       - Kliknięcie zakładki filtruje listę i wyświetla tylko NPC o odpowiednim statusie.
-      - Obok nazwy każdej zakładki wyświetlana jest liczba posiadanych NPC w danym statusie.
+      - Poza zakładkami , dostępne są także tagi oraz filtr (od najnowszych do najstarszych NPC oraz filtry po tagach), tak jak na widoku `/npcs`.
   - **`US-P-03:`** Jako nowy użytkownik, który nie stworzył jeszcze żadnego NPC, chcę zobaczyć na swoim profilu powitalny komunikat z przyciskiem zachęcającym do stworzenia pierwszego NPC.
     - **Kryteria akceptacji:**
-      - Jeśli użytkownik nie ma żadnych NPC (ani roboczych, ani opublikowanych), zamiast listy wyświetlany jest specjalny komponent "Empty State".
-      - Komponent zawiera powitalną wiadomość oraz wyraźny przycisk "Stwórz swojego pierwszego NPC", który prowadzi do kreatora.
+      - Jeśli użytkownik nie ma żadnych NPC (ani roboczych, ani opublikowanych), zamiast listy wyświetlany jest specjalny komponent "Empty State" (należy wykorzystać komponent `Empty` z biblioteki Shadcn, który należy dodać do projektu za pomocą polecenia `npx shadcn@latest add empty`).
+      - Komponent zawiera powitalną wiadomość oraz wyraźny przycisk "Create NPC", który prowadzi do kreatora.
   - **`US-P-04:`** Jako użytkownik, chcę, aby lista moich NPC na profilu obsługiwała "infinite scroll", tak samo jak publiczna lista.
     - **Kryteria akceptacji:**
       - Listy NPC w obu zakładkach ("Wersje robocze" i "Opublikowane") ładują kolejne elementy po przewinięciu na dół.
