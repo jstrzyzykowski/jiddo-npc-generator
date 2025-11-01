@@ -98,10 +98,7 @@ export function NpcParametersFormSection({ form, disabled }: NpcParametersFormSe
                   <span>{config.label}</span>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        className="text-muted-foreground transition-colors hover:text-foreground"
-                      >
+                      <button type="button" className="text-muted-foreground transition-colors hover:text-foreground">
                         <Info className="size-4" aria-hidden="true" />
                         <span className="sr-only">More information about {config.label.toLowerCase()}</span>
                       </button>
@@ -147,10 +144,7 @@ export function NpcParametersFormSection({ form, disabled }: NpcParametersFormSe
                     <span>Shop module</span>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          className="text-muted-foreground transition-colors hover:text-foreground"
-                        >
+                        <button type="button" className="text-muted-foreground transition-colors hover:text-foreground">
                           <Info className="size-4" aria-hidden="true" />
                           <span className="sr-only">Learn more about the shop module</span>
                         </button>
@@ -182,10 +176,7 @@ export function NpcParametersFormSection({ form, disabled }: NpcParametersFormSe
                     <span>Keyword module</span>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          className="text-muted-foreground transition-colors hover:text-foreground"
-                        >
+                        <button type="button" className="text-muted-foreground transition-colors hover:text-foreground">
                           <Info className="size-4" aria-hidden="true" />
                           <span className="sr-only">Learn more about the keyword module</span>
                         </button>

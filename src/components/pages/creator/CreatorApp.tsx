@@ -5,6 +5,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { useCallback, useMemo } from "react";
+import sampleNpcXml from "@/assets/mocks/sample-npc.xml?raw";
 
 import { CreatorForm } from "./CreatorForm";
 import { GenerationStatusPoller } from "./GenerationStatusPoller";
@@ -43,6 +44,12 @@ function CreatorApp({ npcId }: CreatorAppProps) {
     }),
     [code]
   );
+
+  const isXmlPlaceholder = useMemo(() => {
+    return mode === "edit" && (code.xml ?? "") === (sampleNpcXml ?? "");
+  }, [mode, code.xml]);
+
+  const isGenerationBusy = generationState.status === "queued" || generationState.status === "processing";
 
   const handleCopy = useCallback(async (content: string) => {
     if (!content) {
@@ -150,6 +157,30 @@ function CreatorApp({ npcId }: CreatorAppProps) {
           </aside>
 
           <main className="relative">
+            {mode === "edit" && isXmlPlaceholder ? (
+              <Alert variant="default" className="mb-4">
+                <AlertTitle>XML not generated yet</AlertTitle>
+                <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-sm">
+                    You haven’t generated XML for this NPC. Save any changes and generate XML to proceed.
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={isLoading || isGenerationBusy}
+                    onClick={async () => {
+                      const values = form.getValues();
+                      if (form.formState.isDirty) {
+                        await handleSaveChanges(values);
+                      }
+                      await handleGenerate(values);
+                    }}
+                  >
+                    Generate XML
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : null}
             <NpcCodePreview
               code={previewModel}
               onCopy={handleCopy}

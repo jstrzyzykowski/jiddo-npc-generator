@@ -53,7 +53,7 @@ export function GenerationStatusPoller({
         const payload = (await response.json().catch(() => null)) as GenerationJobStatusResponseDto | null;
 
         if (!response.ok || !payload) {
-        throw new Error(`Failed to fetch generation status (${response.status}).`);
+          throw new Error(`Failed to fetch generation status (${response.status}).`);
         }
 
         if (isCancelled) {

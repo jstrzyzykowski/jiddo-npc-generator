@@ -38,7 +38,6 @@ import type {
   UpdateNpcResponseDto,
 } from "../../types";
 import { createEvent as createTelemetryEvent, TelemetryServiceError } from "./telemetryService";
-import { getElapsedMilliseconds } from "../utils";
 
 type NpcInsert = Database["public"]["Tables"]["npcs"]["Insert"];
 type NpcRow = Database["public"]["Tables"]["npcs"]["Row"];
@@ -112,14 +111,11 @@ export class NpcServiceError extends Error {
 
 const DEFAULT_XML_BUCKET = "npc-xml-files";
 const DEFAULT_LUA_FILE_PATH = resolve("src", "assets", "lua", "default.lua");
-const MOCK_XML_FILE_PATH = resolve("src", "assets", "mocks", "sample-npc.xml");
-const MOCK_GENERATION_DELAY_MS = 3_000;
 const KNOWN_GENERATION_JOB_ERROR_CODES = new Set<GenerationJobErrorCode>([
   "AI_TIMEOUT",
   "AI_INVALID_XML",
   "LIMIT_EXCEEDED",
 ]);
-const GENERATION_STATUS_REFRESH_THRESHOLD_MS = 250;
 
 const DEFAULT_LIST_LIMIT = 20;
 const MAX_LIST_LIMIT = 100;
@@ -499,15 +495,8 @@ export class NpcService {
       });
     }
 
-    const elapsedMs = getElapsedMilliseconds(npc.generation_job_started_at);
-    if (elapsedMs === null) {
-      throw new NpcServiceError("GENERATION_JOB_UPDATE_FAILED", {
-        cause: new Error("Unable to compute elapsed time for generation job"),
-      });
-    }
-
     if (status === "succeeded") {
-      const xmlContent = await this.readMockXml();
+      const xmlContent = await this.fetchNpcXml(npcId, DEFAULT_XML_BUCKET);
       const contentSizeBytes = Buffer.byteLength(xmlContent, "utf8");
 
       if (npc.content_size_bytes !== contentSizeBytes) {
@@ -539,39 +528,12 @@ export class NpcService {
       } satisfies GenerationJobStatusResponseDto;
     }
 
-    if (elapsedMs < MOCK_GENERATION_DELAY_MS) {
-      if (status !== "processing" && elapsedMs >= GENERATION_STATUS_REFRESH_THRESHOLD_MS) {
-        await this.updateGenerationJob(npcId, {
-          generation_job_status: "processing",
-        });
-      }
-
-      return {
-        jobId,
-        npcId,
-        status: "processing",
-        xml: null,
-        contentSizeBytes: npc.content_size_bytes,
-        error: null,
-        updatedAt: new Date().toISOString(),
-      } satisfies GenerationJobStatusResponseDto;
-    }
-
-    const xmlContent = await this.readMockXml();
-    const contentSizeBytes = Buffer.byteLength(xmlContent, "utf8");
-
-    await this.updateGenerationJob(npcId, {
-      generation_job_status: "succeeded",
-      generation_job_error: null,
-      content_size_bytes: contentSizeBytes,
-    });
-
     return {
       jobId,
       npcId,
-      status: "succeeded",
-      xml: xmlContent,
-      contentSizeBytes,
+      status,
+      xml: null,
+      contentSizeBytes: npc.content_size_bytes,
       error: null,
       updatedAt: new Date().toISOString(),
     } satisfies GenerationJobStatusResponseDto;
@@ -1053,7 +1015,23 @@ export class NpcService {
 
     const npcWithOwner = await this.fetchNpcWithOwner(npcId, includeDraft, userId);
 
-    const xmlContent = await this.fetchNpcXml(npcId, storageBucket);
+    let xmlContent = "";
+    // For draft access we allow missing XML without failing the whole request
+    if (!includeDraft) {
+      xmlContent = await this.fetchNpcXml(npcId, storageBucket);
+    } else {
+      try {
+        // Best-effort: if XML exists, include it (e.g., after earlier generation);
+        // otherwise, silently continue with empty string (no 500s in draft view).
+        xmlContent = await this.fetchNpcXml(npcId, storageBucket);
+      } catch (maybeMissing) {
+        if (maybeMissing instanceof NpcServiceError) {
+          xmlContent = "";
+        } else {
+          throw maybeMissing;
+        }
+      }
+    }
 
     const luaContent = await this.readLuaTemplate(luaFilePath);
 
@@ -1379,17 +1357,7 @@ export class NpcService {
 
     return data;
   }
-
-  private async readMockXml(): Promise<string> {
-    try {
-      return await readFile(MOCK_XML_FILE_PATH, "utf8");
-    } catch (error) {
-      console.error("NpcService.readMockXml", error);
-      throw new NpcServiceError("XML_FETCH_FAILED", { cause: error });
-    }
-  }
 }
-
 function normalizeGenerationJobError(error: unknown): GenerationJobStatusResponseDto["error"] {
   if (!error || typeof error !== "object") {
     return null;

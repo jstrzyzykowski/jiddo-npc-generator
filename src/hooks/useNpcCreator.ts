@@ -150,6 +150,7 @@ export function useNpcCreator(npcId?: string): UseNpcCreatorResult {
   const [generationState, setGenerationState] = useState<CreatorGenerationState>(INITIAL_GENERATION_STATE);
 
   const initialDataRef = useRef<CreatorFormData>(normalizeFormData(DEFAULT_FORM_VALUES));
+  const skipBeforeUnloadRef = useRef<boolean>(false);
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
@@ -180,6 +181,9 @@ export function useNpcCreator(npcId?: string): UseNpcCreatorResult {
     }
 
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (skipBeforeUnloadRef.current) {
+        return;
+      }
       if (!form.formState.isDirty) {
         return;
       }
@@ -284,7 +288,7 @@ export function useNpcCreator(npcId?: string): UseNpcCreatorResult {
         form.reset(formData, { keepDirty: false, keepErrors: false });
 
         setCode({
-          xml: details.xml ?? DEFAULT_CODE_STATE.xml,
+          xml: typeof details.xml === "string" && details.xml.trim().length > 0 ? details.xml : DEFAULT_CODE_STATE.xml,
           lua: details.lua ?? DEFAULT_CODE_STATE.lua,
           isLoading: false,
           contentSizeBytes: details.contentSizeBytes ?? null,
@@ -325,52 +329,61 @@ export function useNpcCreator(npcId?: string): UseNpcCreatorResult {
     };
   }, [form, mode, npcId, reloadToken]);
 
-  const handleSaveDraft = useCallback(async (data: CreatorFormData) => {
-    const normalized = normalizeFormData(data);
+  const handleSaveDraft = useCallback(
+    async (data: CreatorFormData) => {
+      const normalized = normalizeFormData(data);
 
-    try {
-      const command = buildCreateNpcPayload(normalized);
-      const response = await fetchJson<CreateNpcResponseDto>("/api/npcs", {
-        method: "POST",
-        headers: JSON_HEADERS,
-        body: JSON.stringify(command),
-      });
-
-      const createdNpcId = response.id;
-
-      if (!createdNpcId) {
-        throw new Error("Brak identyfikatora NPC w odpowiedzi serwera.");
-      }
-
-      if (normalized.is_shop_active && (normalized.shop_items?.length ?? 0) > 0) {
-        const shopCommand = buildShopItemsCommand(normalized.shop_items ?? []);
-        await fetchJson(`/api/npcs/${createdNpcId}/shop-items`, {
-          method: "PUT",
+      try {
+        const command = buildCreateNpcPayload(normalized);
+        const response = await fetchJson<CreateNpcResponseDto>("/api/npcs", {
+          method: "POST",
           headers: JSON_HEADERS,
-          body: JSON.stringify(shopCommand),
+          body: JSON.stringify(command),
         });
-      }
 
-      if (normalized.is_keywords_active && (normalized.keywords?.length ?? 0) > 0) {
-        const keywordsCommand = buildKeywordsCommand(normalized.keywords ?? []);
-        await fetchJson(`/api/npcs/${createdNpcId}/keywords`, {
-          method: "PUT",
-          headers: JSON_HEADERS,
-          body: JSON.stringify(keywordsCommand),
-        });
-      }
+        const createdNpcId = response.id;
 
-      toast.success("Draft saved successfully.");
+        if (!createdNpcId) {
+          throw new Error("Brak identyfikatora NPC w odpowiedzi serwera.");
+        }
 
-      if (typeof window !== "undefined") {
-        window.location.assign(`/creator/${createdNpcId}`);
+        if (normalized.is_shop_active && (normalized.shop_items?.length ?? 0) > 0) {
+          const shopCommand = buildShopItemsCommand(normalized.shop_items ?? []);
+          await fetchJson(`/api/npcs/${createdNpcId}/shop-items`, {
+            method: "PUT",
+            headers: JSON_HEADERS,
+            body: JSON.stringify(shopCommand),
+          });
+        }
+
+        if (normalized.is_keywords_active && (normalized.keywords?.length ?? 0) > 0) {
+          const keywordsCommand = buildKeywordsCommand(normalized.keywords ?? []);
+          await fetchJson(`/api/npcs/${createdNpcId}/keywords`, {
+            method: "PUT",
+            headers: JSON_HEADERS,
+            body: JSON.stringify(keywordsCommand),
+          });
+        }
+
+        toast.success("Draft saved successfully.");
+
+        // Bypass unsaved-changes guard for controlled navigation
+        skipBeforeUnloadRef.current = true;
+        // Reset form to clear dirty state (best-effort before navigation)
+        initialDataRef.current = normalized;
+        form.reset(normalized, { keepDirty: false, keepErrors: false });
+
+        if (typeof window !== "undefined") {
+          window.location.assign(`/creator/${createdNpcId}`);
+        }
+      } catch (saveError) {
+        console.error("useNpcCreator.handleSaveDraft", saveError);
+        const message = extractErrorMessage(saveError) ?? "Failed to save draft.";
+        toast.error(message);
       }
-    } catch (saveError) {
-      console.error("useNpcCreator.handleSaveDraft", saveError);
-      const message = extractErrorMessage(saveError) ?? "Failed to save draft.";
-      toast.error(message);
-    }
-  }, []);
+    },
+    [form]
+  );
 
   const handleSaveChanges = useCallback(
     async (data: CreatorFormData) => {
@@ -469,7 +482,8 @@ export function useNpcCreator(npcId?: string): UseNpcCreatorResult {
   );
 
   const handleGenerate = useCallback(
-    async (data: CreatorFormData) => {
+    async (_data: CreatorFormData) => {
+      void _data;
       if (!npcId) {
         toast.error("Save the NPC before attempting to generate XML.");
         return;
