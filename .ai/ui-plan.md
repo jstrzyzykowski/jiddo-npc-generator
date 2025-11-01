@@ -61,7 +61,7 @@ Kluczowym założeniem architektury jest dynamiczne dostosowywanie interfejsu do
 - **Ścieżka:** `/creator` (nowy NPC), `/creator/{npcId}` (edycja)
 - **Główny cel:** Główne narzędzie do tworzenia i modyfikowania NPC.
 - **Kluczowe informacje:** Formularz parametrów NPC, podgląd generowanego XML i statycznego `default.lua`.
-- **Kluczowe komponenty:** `CreatorForm` (w `aside`), `CodePreview`, `ActionToolbar` (sticky), `ShopItemsEditor`, `KeywordsEditor`, `ConfirmationDialog` (dla usuwania), `Loader` (w panelu XML).
+- **Kluczowe komponenty:** `CreatorForm` (w `aside`), `CodePreview`, `ActionToolbar` (sticky bottom bar w panelu aside), `ShopItemsEditor`, `KeywordsEditor`, `ConfirmationDialog` (dla usuwania), `Loader` (w panelu XML).
 - **UX, dostępność, bezpieczeństwo:** Asynchroniczny proces generowania ma jasny feedback (blokada formularza, loader). Ostrzeżenie `beforeunload` zapobiega utracie niezapisanych danych. Stan przycisków w `ActionToolbar` precyzyjnie prowadzi użytkownika przez proces.
 
 ### Widok: Profil Użytkownika (User Profile)
