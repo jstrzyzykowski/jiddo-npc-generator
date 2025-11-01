@@ -1,5 +1,5 @@
 import { ArrowUp } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { NpcListProvider } from "@/components/features/npc/list/NpcListProvider";
 import type { FilterTag, SortOption } from "@/components/features/npc/list/config";
@@ -18,9 +18,6 @@ interface RootProviderProps {
 }
 
 export function RootProvider({ currentPath, pageProps, children }: RootProviderProps) {
-  const lastScrollYRef = useRef(0);
-  const [isSecondaryVisible, setSecondaryVisible] = useState(true);
-  const [isFooterVisible, setFooterVisible] = useState(true);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
@@ -29,22 +26,7 @@ export function RootProvider({ currentPath, pageProps, children }: RootProviderP
     }
 
     const handleScroll = () => {
-      const currentY = window.scrollY;
-      const delta = currentY - lastScrollYRef.current;
-      const isScrollingDown = delta > 4;
-      const isScrollingUp = delta < -4;
-      const nearTop = currentY < 64;
-
-      if (nearTop || isScrollingUp) {
-        setSecondaryVisible(true);
-        setFooterVisible(true);
-      } else if (isScrollingDown) {
-        setSecondaryVisible(false);
-        setFooterVisible(false);
-      }
-
-      setShowScrollTop(currentY > 160);
-      lastScrollYRef.current = currentY;
+      setShowScrollTop(window.scrollY > 160);
     };
 
     handleScroll();
@@ -65,15 +47,15 @@ export function RootProvider({ currentPath, pageProps, children }: RootProviderP
   const layout = (
     <div className="relative flex min-h-screen flex-col bg-background text-foreground">
       <Topbar />
-      <SecondaryNavbar currentPath={currentPath} isVisible={isSecondaryVisible} />
+      <SecondaryNavbar currentPath={currentPath} />
       <main className="flex flex-1 flex-col">{children}</main>
-      <Footer isVisible={isFooterVisible} />
+      <Footer />
 
-      {showScrollTop && !isFooterVisible ? (
+      {showScrollTop ? (
         <Button
           size="icon"
           variant="secondary"
-          className="fixed bottom-6 right-6 z-50 shadow-lg"
+          className="fixed bottom-20 right-6 z-50 shadow-lg"
           onClick={handleScrollTop}
           aria-label="Scroll to top"
         >
@@ -92,7 +74,7 @@ export function RootProvider({ currentPath, pageProps, children }: RootProviderP
       ) : (
         layout
       )}
-      <Toaster position="top-center" richColors closeButton />
+      <Toaster position="top-center" />
     </AuthProvider>
   );
 }

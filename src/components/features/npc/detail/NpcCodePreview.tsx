@@ -1,4 +1,4 @@
-import { Copy } from "lucide-react";
+import { Copy, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,6 +9,10 @@ import type { NpcCodeViewModel } from "./types";
 export interface NpcCodePreviewProps {
   code: NpcCodeViewModel;
   onCopy: (content: string) => Promise<void> | void;
+  isLoading?: boolean;
+  status?: "idle" | "queued" | "processing" | "succeeded" | "failed";
+  statusMessage?: string | null;
+  updatedAt?: string | null;
 }
 
 const TABS: { value: "xml" | "lua"; label: string; description: string }[] = [
@@ -16,19 +20,51 @@ const TABS: { value: "xml" | "lua"; label: string; description: string }[] = [
   { value: "lua", label: "Lua", description: "Default behavior script" },
 ];
 
-export function NpcCodePreview({ code, onCopy }: NpcCodePreviewProps) {
+const STATUS_LABELS: Record<Exclude<NpcCodePreviewProps["status"], undefined | "idle">, string> = {
+  queued: "Oczekuje w kolejce",
+  processing: "Generowanie w toku",
+  succeeded: "Wygenerowano",
+  failed: "Błąd generowania",
+};
+
+export function NpcCodePreview({ code, onCopy, isLoading, status, statusMessage, updatedAt }: NpcCodePreviewProps) {
   const copyDisabled = code.isCopyDisabled;
+  const effectiveStatus = status && status !== "idle" ? status : null;
+  const statusLabel = effectiveStatus ? (STATUS_LABELS[effectiveStatus] ?? null) : null;
 
   return (
     <section
       aria-labelledby="npc-code-preview-title"
-      className="flex flex-col gap-5 rounded-2xl border border-border/60 bg-card/60 p-6 shadow-sm backdrop-blur"
+      className="relative flex flex-col gap-5 rounded-2xl border border-border/60 bg-card/60 p-6 shadow-sm backdrop-blur"
+      aria-busy={isLoading}
     >
+      {isLoading ? (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-background/80">
+          <Loader2 className="size-5 animate-spin text-primary" aria-hidden="true" />
+          <span className="text-sm text-muted-foreground">Trwa generowanie plików NPC...</span>
+        </div>
+      ) : null}
+
       <header className="flex flex-col gap-1">
         <h2 id="npc-code-preview-title" className="text-xl font-semibold text-foreground">
           Generated files
         </h2>
         <p className="text-sm text-muted-foreground">Review the XML definition and Lua template used for this NPC.</p>
+
+        {(statusLabel || updatedAt) && (
+          <p className="text-xs text-muted-foreground">
+            {statusLabel ? <span className="font-medium text-foreground">Status:</span> : null}
+            {statusLabel ? <span className="ml-1 text-foreground/80">{statusLabel}</span> : null}
+            {updatedAt ? (
+              <>
+                {statusLabel ? <span className="mx-2 text-muted-foreground/60">•</span> : null}
+                <span className="font-medium text-foreground">Ostatnia aktualizacja:</span>
+                <span className="ml-1 text-foreground/80">{updatedAt}</span>
+              </>
+            ) : null}
+          </p>
+        )}
+        {status === "failed" && statusMessage ? <p className="text-xs text-destructive">{statusMessage}</p> : null}
       </header>
 
       <Tabs defaultValue="xml" className="flex flex-col gap-4">

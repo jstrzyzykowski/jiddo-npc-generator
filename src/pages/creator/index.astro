@@ -1,0 +1,10 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { CreatorPage } from "@/components/pages/creator/CreatorApp";
+
+export const prerender = false;
+---
+
+<Layout title="Kreator NPC">
+  <CreatorPage client:load currentPath={Astro.url.pathname} npcId={undefined} />
+</Layout>

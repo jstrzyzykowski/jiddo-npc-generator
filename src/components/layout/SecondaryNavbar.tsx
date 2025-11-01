@@ -13,22 +13,15 @@ import { useOptionalNpcListContext } from "@/components/features/npc/list/NpcLis
 
 interface SecondaryNavbarProps {
   currentPath: string;
-  isVisible: boolean;
 }
 
-export function SecondaryNavbar({ currentPath, isVisible }: SecondaryNavbarProps) {
+export function SecondaryNavbar({ currentPath }: SecondaryNavbarProps) {
   const isNpcPage = currentPath.startsWith("/npcs");
   const npcListContext = useOptionalNpcListContext();
   const selectedSortLabel = npcListContext?.sort.label ?? "Sortowanie";
 
   return (
-    <nav
-      aria-label="Secondary navigation"
-      className={cn(
-        "sticky top-16 z-30 border-b bg-background/95 backdrop-blur transition-transform duration-300",
-        isVisible ? "translate-y-0" : "-translate-y-full"
-      )}
-    >
+    <nav aria-label="Secondary navigation" className="sticky top-[65px] z-30 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex h-12 w-full max-w-[1200px] items-center justify-between gap-4 px-4">
         <div className="flex items-center gap-2 text-sm font-medium">
           <a

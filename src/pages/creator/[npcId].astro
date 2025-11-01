@@ -1,0 +1,13 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { CreatorPage } from "@/components/pages/creator/CreatorApp";
+
+export const prerender = false;
+
+const npcIdParam = Astro.params.npcId;
+const npcId = typeof npcIdParam === "string" && npcIdParam.length > 0 ? npcIdParam : undefined;
+---
+
+<Layout title={npcId ? "Edytuj NPC" : "Kreator NPC"}>
+  <CreatorPage client:load currentPath={Astro.url.pathname} npcId={npcId} />
+</Layout>

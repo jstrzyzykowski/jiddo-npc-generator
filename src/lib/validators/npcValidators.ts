@@ -672,3 +672,165 @@ export type BulkReplaceNpcShopItemsCommandResult = z.infer<typeof bulkReplaceNpc
 export function parseBulkReplaceNpcShopItemsCommand(payload: unknown): BulkReplaceNpcShopItemsCommand {
   return bulkReplaceNpcShopItemsCommandSchema.parse(payload);
 }
+
+const SHOP_ITEM_PRICE_MIN = 0;
+const SHOP_ITEM_ID_MIN = 1;
+const SHOP_ITEM_SUBTYPE_MIN = 0;
+const SHOP_ITEM_CHARGES_MIN = 0;
+const SHOP_ITEM_CONTAINER_MIN = 1;
+const KEYWORD_PHRASE_MIN_LENGTH = 1;
+const NPC_NAME_MIN_LENGTH = 3;
+const LOOK_TYPE_MIN = 1;
+
+const creatorShopItemSchema = z.object({
+  list_type: z.enum(["buy", "sell"], {
+    required_error: "Typ listy jest wymagany.",
+    invalid_type_error: "Typ listy musi być wartością 'buy' lub 'sell'.",
+  }),
+  name: z
+    .string({ required_error: "Nazwa przedmiotu jest wymagana." })
+    .trim()
+    .min(1, "Nazwa przedmiotu jest wymagana.")
+    .max(SHOP_ITEM_NAME_MAX_LENGTH, {
+      message: `Nazwa przedmiotu może mieć maksymalnie ${SHOP_ITEM_NAME_MAX_LENGTH} znaków.`,
+    }),
+  item_id: z.coerce
+    .number({ invalid_type_error: "ID przedmiotu musi być liczbą." })
+    .int({ message: "ID przedmiotu musi być liczbą całkowitą." })
+    .min(SHOP_ITEM_ID_MIN, { message: "ID przedmiotu musi być dodatnią liczbą całkowitą." }),
+  price: z.coerce
+    .number({ invalid_type_error: "Cena musi być liczbą." })
+    .int({ message: "Cena musi być liczbą całkowitą." })
+    .min(SHOP_ITEM_PRICE_MIN, { message: "Cena musi być liczbą nieujemną." }),
+  subtype: z.coerce
+    .number({ invalid_type_error: "Subtype musi być liczbą." })
+    .int({ message: "Subtype musi być liczbą całkowitą." })
+    .min(SHOP_ITEM_SUBTYPE_MIN, { message: "Subtype nie może być liczbą ujemną." })
+    .optional(),
+  charges: z.coerce
+    .number({ invalid_type_error: "Charges musi być liczbą." })
+    .int({ message: "Charges musi być liczbą całkowitą." })
+    .min(SHOP_ITEM_CHARGES_MIN, { message: "Charges nie może być liczbą ujemną." })
+    .optional(),
+  real_name: z
+    .string({ invalid_type_error: "Real name musi być tekstem." })
+    .trim()
+    .max(SHOP_ITEM_REAL_NAME_MAX_LENGTH, {
+      message: `Alternatywna nazwa może mieć maksymalnie ${SHOP_ITEM_REAL_NAME_MAX_LENGTH} znaków.`,
+    })
+    .optional(),
+  container_item_id: z.coerce
+    .number({ invalid_type_error: "Container item ID musi być liczbą." })
+    .int({ message: "Container item ID musi być liczbą całkowitą." })
+    .min(SHOP_ITEM_CONTAINER_MIN, {
+      message: "Container item ID musi być dodatnią liczbą całkowitą.",
+    })
+    .optional(),
+});
+
+const creatorKeywordSchema = z.object({
+  response_text: z
+    .string({ required_error: "Tekst odpowiedzi jest wymagany." })
+    .trim()
+    .min(1, "Tekst odpowiedzi jest wymagany.")
+    .max(KEYWORD_RESPONSE_MAX_LENGTH, {
+      message: `Tekst odpowiedzi może mieć maksymalnie ${KEYWORD_RESPONSE_MAX_LENGTH} znaków.`,
+    }),
+  phrases: z
+    .array(
+      z
+        .string({ required_error: "Fraza jest wymagana." })
+        .trim()
+        .min(KEYWORD_PHRASE_MIN_LENGTH, "Fraza nie może być pusta.")
+        .max(KEYWORD_PHRASE_MAX_LENGTH, {
+          message: `Fraza może mieć maksymalnie ${KEYWORD_PHRASE_MAX_LENGTH} znaków.`,
+        }),
+      { required_error: "Lista fraz jest wymagana." }
+    )
+    .min(1, "Musi istnieć co najmniej jedna fraza."),
+});
+
+export const CreatorFormSchema = z
+  .object({
+    name: z
+      .string({ required_error: "Nazwa jest wymagana." })
+      .trim()
+      .min(NPC_NAME_MIN_LENGTH, {
+        message: `Nazwa musi mieć co najmniej ${NPC_NAME_MIN_LENGTH} znaki.`,
+      })
+      .max(NPC_NAME_MAX_LENGTH, {
+        message: `Nazwa może mieć maksymalnie ${NPC_NAME_MAX_LENGTH} znaków.`,
+      }),
+    look_type: z.coerce
+      .number({ invalid_type_error: "Typ wyglądu musi być liczbą." })
+      .int({ message: "Typ wyglądu musi być liczbą całkowitą." })
+      .min(LOOK_TYPE_MIN, { message: "Typ wyglądu musi być dodatnią liczbą całkowitą." }),
+    look_head: z.coerce
+      .number({ invalid_type_error: "Kolor głowy musi być liczbą." })
+      .int({ message: "Kolor głowy musi być liczbą całkowitą." })
+      .min(LOOK_COLOR_MIN, { message: "Kolor głowy nie może być ujemny." })
+      .max(LOOK_COLOR_MAX, {
+        message: `Kolor głowy może mieć wartość maksymalnie ${LOOK_COLOR_MAX}.`,
+      }),
+    look_body: z.coerce
+      .number({ invalid_type_error: "Kolor ciała musi być liczbą." })
+      .int({ message: "Kolor ciała musi być liczbą całkowitą." })
+      .min(LOOK_COLOR_MIN, { message: "Kolor ciała nie może być ujemny." })
+      .max(LOOK_COLOR_MAX, {
+        message: `Kolor ciała może mieć wartość maksymalnie ${LOOK_COLOR_MAX}.`,
+      }),
+    look_legs: z.coerce
+      .number({ invalid_type_error: "Kolor nóg musi być liczbą." })
+      .int({ message: "Kolor nóg musi być liczbą całkowitą." })
+      .min(LOOK_COLOR_MIN, { message: "Kolor nóg nie może być ujemny." })
+      .max(LOOK_COLOR_MAX, {
+        message: `Kolor nóg może mieć wartość maksymalnie ${LOOK_COLOR_MAX}.`,
+      }),
+    look_feet: z.coerce
+      .number({ invalid_type_error: "Kolor stóp musi być liczbą." })
+      .int({ message: "Kolor stóp musi być liczbą całkowitą." })
+      .min(LOOK_COLOR_MIN, { message: "Kolor stóp nie może być ujemny." })
+      .max(LOOK_COLOR_MAX, {
+        message: `Kolor stóp może mieć wartość maksymalnie ${LOOK_COLOR_MAX}.`,
+      }),
+    look_addons: z.coerce
+      .number({ invalid_type_error: "Addony muszą być liczbą." })
+      .int({ message: "Addony muszą być liczbą całkowitą." })
+      .min(LOOK_ADDONS_MIN, { message: "Addony nie mogą być ujemne." })
+      .max(LOOK_ADDONS_MAX, {
+        message: `Addony mogą mieć wartość maksymalnie ${LOOK_ADDONS_MAX}.`,
+      }),
+    is_shop_active: z.boolean({ required_error: "Informacja o aktywności sklepu jest wymagana." }),
+    is_keywords_active: z.boolean({ required_error: "Informacja o aktywności słów kluczowych jest wymagana." }),
+    shop_items: z.array(creatorShopItemSchema).max(SHOP_ITEMS_LIMIT_MAX).optional(),
+    keywords: z.array(creatorKeywordSchema).max(KEYWORD_LIMIT_MAX).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.is_shop_active) {
+      const shopItems = value.shop_items ?? [];
+
+      if (shopItems.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["shop_items"],
+          message: "Sklep musi zawierać co najmniej jeden przedmiot.",
+        });
+      }
+    }
+
+    if (value.is_keywords_active) {
+      const keywords = value.keywords ?? [];
+
+      if (keywords.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["keywords"],
+          message: "Słowa kluczowe muszą zawierać co najmniej jeden wpis.",
+        });
+      }
+    }
+  });
+
+export type CreatorShopItemFormData = z.infer<typeof creatorShopItemSchema>;
+export type CreatorKeywordFormData = z.infer<typeof creatorKeywordSchema>;
+export type CreatorFormData = z.infer<typeof CreatorFormSchema>;
