@@ -1,0 +1,13 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { ProfilePage } from "@/components/pages/profile/ProfileApp";
+
+export const prerender = false;
+
+const userIdParam = Astro.params.userId;
+const userId = typeof userIdParam === "string" && userIdParam.length > 0 ? userIdParam : "";
+---
+
+<Layout title="User Profile">
+  <ProfilePage client:load currentPath={Astro.url.pathname} userId={userId} />
+</Layout>

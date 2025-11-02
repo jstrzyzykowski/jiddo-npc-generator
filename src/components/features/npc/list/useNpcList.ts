@@ -2,13 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { createNpcListQuery } from "./config";
 import { useNpcListContext } from "./NpcListProvider";
-import type { GetNpcListResponseDto, NpcListItemDto } from "@/types";
+import type { GetNpcListQueryDto, GetNpcListResponseDto, NpcListItemDto } from "@/types";
 
 export type NpcListStatus = "idle" | "loading" | "loading-more" | "success" | "error";
 
 export interface UseNpcListOptions {
   initialData: GetNpcListResponseDto;
   initialError: string | null;
+  overrides?: Partial<Omit<GetNpcListQueryDto, "sort" | "order">>;
+  fetchOnMount?: boolean;
 }
 
 export interface UseNpcListResult {
@@ -30,7 +32,12 @@ interface InternalState {
   hasMore: boolean;
 }
 
-export function useNpcList({ initialData, initialError }: UseNpcListOptions): UseNpcListResult {
+export function useNpcList({
+  initialData,
+  initialError,
+  overrides,
+  fetchOnMount = false,
+}: UseNpcListOptions): UseNpcListResult {
   const { sort, filter } = useNpcListContext();
   const [state, setState] = useState<InternalState>(() => {
     if (initialError) {
@@ -56,10 +63,11 @@ export function useNpcList({ initialData, initialError }: UseNpcListOptions): Us
   const abortRef = useRef<AbortController | null>(null);
 
   const buildSearchParams = useCallback(
-    (overrides: Partial<{ cursor: string | null; limit: number | undefined }> = {}) => {
+    (localOverrides: Partial<{ cursor: string | null; limit: number | undefined }> = {}) => {
       const query = createNpcListQuery(sort, filter, {
-        cursor: overrides.cursor ?? undefined,
-        limit: overrides.limit,
+        ...(overrides ?? {}),
+        cursor: localOverrides.cursor ?? undefined,
+        limit: localOverrides.limit,
       });
 
       const params = new URLSearchParams();
@@ -79,7 +87,7 @@ export function useNpcList({ initialData, initialError }: UseNpcListOptions): Us
 
       return params;
     },
-    [sort, filter]
+    [sort, filter, overrides]
   );
 
   const executeFetch = useCallback(
@@ -139,11 +147,14 @@ export function useNpcList({ initialData, initialError }: UseNpcListOptions): Us
   useEffect(() => {
     if (!didHydrateRef.current) {
       didHydrateRef.current = true;
+      if (fetchOnMount) {
+        executeFetch("replace");
+      }
       return;
     }
 
     executeFetch("replace");
-  }, [executeFetch, sort.value, filter.value]);
+  }, [executeFetch, sort.value, filter.value, fetchOnMount]);
 
   useEffect(() => () => abortRef.current?.abort(), []);
 

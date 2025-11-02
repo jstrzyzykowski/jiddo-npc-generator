@@ -18,6 +18,7 @@ interface NpcGridProps {
   onLoadMore: () => Promise<void> | void;
   onRetry: () => Promise<void> | void;
   onRefresh?: () => Promise<void> | void;
+  variant?: "default" | "profile";
 }
 
 export function NpcGrid({
@@ -30,20 +31,23 @@ export function NpcGrid({
   onLoadMore,
   onRetry,
   onRefresh,
+  variant = "default",
 }: NpcGridProps) {
   const showInitialSkeleton = isLoading && items.length === 0;
   const showInitialError = status === "error" && items.length === 0;
   const showEmpty = status === "success" && items.length === 0;
 
+  const gridColsClass = `grid gap-4 md:grid-cols-2 ${variant === "profile" ? "lg:grid-cols-2" : "lg:grid-cols-4"}`;
+
   return (
     <div className="flex flex-col gap-6">
-      {showInitialSkeleton ? <SkeletonGrid /> : null}
+      {showInitialSkeleton ? <SkeletonGrid gridClassName={gridColsClass} /> : null}
 
       {showInitialError ? <ErrorState message={error?.message} onRetry={onRetry} /> : null}
 
       {showEmpty ? <EmptyState /> : null}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className={gridColsClass}>
         {items.map((npc) => (
           <NpcCard key={npc.id} npc={npc} className="h-[392px]" onRefresh={onRefresh} />
         ))}
@@ -51,7 +55,7 @@ export function NpcGrid({
 
       {status === "error" && items.length > 0 ? <InlineError message={error?.message} onRetry={onRetry} /> : null}
 
-      {isLoadingMore ? <SkeletonLoaderRow /> : null}
+      {isLoadingMore ? <SkeletonLoaderRow gridClassName={gridColsClass} /> : null}
 
       <InfiniteScrollTrigger
         disabled={!hasMore || isLoading || isLoadingMore || status === "error"}
@@ -61,9 +65,9 @@ export function NpcGrid({
   );
 }
 
-function SkeletonGrid() {
+function SkeletonGrid({ gridClassName }: { gridClassName: string }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className={gridClassName}>
       {Array.from({ length: 8 }).map((_, index) => (
         <Skeleton key={index} className="h-[392px] w-full rounded-xl" />
       ))}
@@ -71,9 +75,9 @@ function SkeletonGrid() {
   );
 }
 
-function SkeletonLoaderRow() {
+function SkeletonLoaderRow({ gridClassName }: { gridClassName: string }) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className={gridClassName}>
       {Array.from({ length: 4 }).map((_, index) => (
         <Skeleton key={index} className="h-[392px] w-full rounded-xl" />
       ))}
