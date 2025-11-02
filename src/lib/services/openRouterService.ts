@@ -1,4 +1,6 @@
 import { z, type ZodTypeAny } from "zod";
+import npcXmlGeneratorSystemPrompt from "@/assets/prompts/npc-xml-generator.md?raw";
+import { formatNpcForPromptFromNpc } from "@/lib/prompt/npcPromptFormatter";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
 type EnvRecord = Record<string, string | undefined>;
@@ -311,16 +313,10 @@ export class OpenRouterService {
   }
 
   private buildNpcPrompts(npc: NpcDetailResponseDto) {
-    const systemPrompt = [
-      "You are an expert NPC XML generator for Open Tibia (Jido, TFS <= 1.5).",
-      "Return ONLY valid XML content. No markdown, no commentary.",
-      "Follow the Jido NPC XML schema strictly and keep output deterministic.",
-    ].join("\n");
+    const systemPrompt = npcXmlGeneratorSystemPrompt;
 
-    const safeNpc = npc ?? {};
-    const userPrompt = ["Generate an NPC XML based on the following data.", JSON.stringify(safeNpc, null, 2)].join(
-      "\n"
-    );
+    const npcSection = formatNpcForPromptFromNpc(npc as unknown as import("@/types").NpcDetailResponseDto);
+    const userPrompt = `Generate an NPC XML based on the following data.\n\n${npcSection}`;
 
     return { systemPrompt, userPrompt };
   }
