@@ -50,7 +50,7 @@ export function MagicLinkForm() {
       setIsSubmitted(true);
     } catch (error) {
       console.error(`${LOG_PREFIX}: signInWithOtp`, error);
-      toast.error("Wystąpił błąd podczas wysyłania linku. Spróbuj ponownie.");
+      toast.error("An error occurred while sending the link. Please try again.");
     }
   };
 
@@ -64,7 +64,7 @@ export function MagicLinkForm() {
       </CardHeader>
       <CardContent className="space-y-6">
         {isSubmitted ? (
-          <Alert className="bg-muted/40">
+          <Alert className="bg-muted/40 animate-slide-up">
             <Mail className="size-5" aria-hidden="true" />
             <AlertTitle>Check your email for a special login link</AlertTitle>
             <AlertDescription>
@@ -81,7 +81,7 @@ export function MagicLinkForm() {
                   <FormItem>
                     <FormLabel>Email address</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="you@example.com" autoComplete="email" {...field} />
+                      <Input type="email" autoComplete="email" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

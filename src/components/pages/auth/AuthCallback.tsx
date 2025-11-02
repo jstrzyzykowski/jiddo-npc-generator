@@ -26,13 +26,13 @@ function AuthCallbackPage() {
   return (
     <div className="flex flex-1 flex-col px-4 py-20">
       <div className="flex flex-1 items-center justify-center">
-        {isProcessing ? <Spinner label="Finalizujemy logowanie..." /> : null}
+        {isProcessing ? <Spinner label="Finalizing sign in..." /> : null}
         {status === "error" && error ? (
           <AuthCallbackError
             title={error.title}
             message={error.message}
             actionHref="/login"
-            actionLabel="Wróć do logowania"
+            actionLabel="Go back to login"
           />
         ) : null}
       </div>

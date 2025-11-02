@@ -143,7 +143,7 @@ function CreatorApp({ npcId }: CreatorAppProps) {
       ) : (
         <div className="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
           <aside>
-            <div className="flex h-full max-h-[calc(100vh-18rem)] flex-col overflow-hidden rounded-2xl border border-border/60 bg-card/40 p-4 shadow-sm">
+            <div className="flex h-full max-h-[calc(100vh-18rem)] flex-col overflow-hidden rounded-2xl border border-border/60 bg-card/40 p-6 shadow-sm">
               <CreatorForm
                 form={form}
                 mode={mode}

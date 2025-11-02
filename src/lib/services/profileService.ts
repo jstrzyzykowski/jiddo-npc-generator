@@ -54,6 +54,39 @@ export async function getProfileWithNpcCounts(
   } satisfies GetProfileMeResponseDto;
 }
 
+export async function updateProfileDisplayName(
+  supabase: SupabaseClient,
+  userId: string,
+  displayName: string
+): Promise<GetProfileMeResponseDto> {
+  if (!userId) {
+    throw new ProfileServiceError("PROFILE_FETCH_FAILED", {
+      cause: new Error("Missing user identifier"),
+    });
+  }
+
+  const trimmed = displayName.trim();
+  if (trimmed.length === 0) {
+    throw new ProfileServiceError("PROFILE_FETCH_FAILED", {
+      cause: new Error("Display name is required"),
+    });
+  }
+
+  const { error } = await supabase.from("profiles").update({ display_name: trimmed }).eq("id", userId);
+
+  if (error) {
+    console.error(`${LOG_PREFIX}: updateProfileDisplayName`, error);
+
+    if (isForbiddenSupabaseError(error)) {
+      throw new ProfileServiceError("PROFILE_ACCESS_FORBIDDEN", { cause: error });
+    }
+
+    throw new ProfileServiceError("PROFILE_FETCH_FAILED", { cause: error });
+  }
+
+  return getProfileWithNpcCounts(supabase, userId);
+}
+
 async function fetchProfile(supabase: SupabaseClient, userId: string): Promise<ProfileSummary | null> {
   const { data, error } = await supabase
     .from("profiles")

@@ -16,9 +16,9 @@ interface SecondaryNavbarProps {
 }
 
 export function SecondaryNavbar({ currentPath }: SecondaryNavbarProps) {
-  const isNpcPage = currentPath.startsWith("/npcs");
   const npcListContext = useOptionalNpcListContext();
-  const selectedSortLabel = npcListContext?.sort.label ?? "Sortowanie";
+  const selectedSortLabel = npcListContext?.sort.label ?? "Sort";
+  const showSortControls = !!npcListContext;
 
   return (
     <nav aria-label="Secondary navigation" className="sticky top-[65px] z-30 border-b bg-background/95 backdrop-blur">
@@ -48,7 +48,7 @@ export function SecondaryNavbar({ currentPath }: SecondaryNavbarProps) {
           </a>
         </div>
 
-        {isNpcPage ? (
+        {showSortControls ? (
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

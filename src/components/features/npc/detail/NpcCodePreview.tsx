@@ -47,7 +47,7 @@ export function NpcCodePreview({ code, onCopy, isLoading, status, statusMessage,
 
       <header className="flex flex-col gap-1">
         <h2 id="npc-code-preview-title" className="text-xl font-semibold text-foreground">
-          Generated files
+          Generated Files
         </h2>
         <p className="text-sm text-muted-foreground">Review the XML definition and Lua template used for this NPC.</p>
 
@@ -58,7 +58,7 @@ export function NpcCodePreview({ code, onCopy, isLoading, status, statusMessage,
             {updatedAt ? (
               <>
                 {statusLabel ? <span className="mx-2 text-muted-foreground/60">•</span> : null}
-                <span className="font-medium text-foreground">Ostatnia aktualizacja:</span>
+                <span className="font-medium text-foreground">Last updated:</span>
                 <span className="ml-1 text-foreground/80">{updatedAt}</span>
               </>
             ) : null}
@@ -130,7 +130,7 @@ function CodeBlock({ value, language }: CodeBlockProps) {
       <div className="flex items-center justify-between border-b border-border/60 bg-muted/40 px-4 py-2 text-xs uppercase text-muted-foreground">
         <span>{languageLabel}</span>
       </div>
-      <ScrollArea className="max-h-[480px]">
+      <ScrollArea className="h-86">
         <pre className="font-mono whitespace-pre-wrap break-words p-4 text-xs leading-relaxed text-foreground">
           <code>{content}</code>
         </pre>

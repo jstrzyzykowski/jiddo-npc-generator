@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { createRootPage, type AppShellProps } from "@/components/AppShell";
 
@@ -9,6 +9,10 @@ import { NpcTabs, type TabKey } from "./NpcTabs";
 import { NpcsSection } from "./NpcsSection";
 import { ProfileEmptyState } from "./ProfileEmptyState";
 import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { EditProfileDialog, type EditProfileFormValues } from "./EditProfileDialog";
+import { useAuth } from "@/components/auth/useAuth";
+import { toast } from "sonner";
 import { useProfileMe } from "@/hooks/useProfileMe";
 
 export interface ProfileAppProps extends AppShellProps {
@@ -17,8 +21,37 @@ export interface ProfileAppProps extends AppShellProps {
 
 function ProfileApp({ userId }: ProfileAppProps) {
   const { profile, isLoading, error, retry } = useProfileMe();
+  const { refresh } = useAuth();
   const [activeSection, setActiveSection] = useState<"npcs" | "overview">("npcs");
   const [tab, setTab] = useState<TabKey>("drafts");
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [listRevision, setListRevision] = useState(0);
+
+  const onSubmit = useCallback(
+    async (values: EditProfileFormValues) => {
+      try {
+        const response = await fetch("/api/profiles/me", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ displayName: values.displayName, bio: values.bio }),
+        });
+
+        if (!response.ok) {
+          const body = await response.json().catch(() => null);
+          throw new Error(body?.error?.message ?? `Failed with status ${response.status}`);
+        }
+
+        await refresh();
+        await retry();
+        setListRevision((v) => v + 1);
+        setIsEditOpen(false);
+        toast.success("Profile updated");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed to update profile");
+      }
+    },
+    [refresh, retry]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -43,7 +76,25 @@ function ProfileApp({ userId }: ProfileAppProps) {
         onChange={setActiveSection}
       />
 
-      <ProfileLayout aside={<ProfileAside profile={profile} loading={isLoading} error={error} />}>
+      <ProfileLayout
+        top={
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="sm" className="self-start" asChild>
+              <a href="/" className="inline-flex items-center gap-2">
+                <ArrowLeft className="size-4" aria-hidden />
+                Back to Home
+              </a>
+            </Button>
+
+            {profile ? (
+              <Button variant="secondary" size="sm" onClick={() => setIsEditOpen(true)}>
+                Edit Profile
+              </Button>
+            ) : null}
+          </div>
+        }
+        header={<ProfileAside profile={profile} loading={isLoading} error={error} />}
+      >
         {showNotLogged ? (
           <div className="mx-auto flex max-w-2xl flex-col items-center justify-center gap-3 rounded-2xl border p-8 text-center">
             <p className="text-sm text-muted-foreground">You need to sign in to view your profile.</p>
@@ -66,10 +117,19 @@ function ProfileApp({ userId }: ProfileAppProps) {
         ) : (
           <div className="flex flex-col gap-6">
             <NpcTabs value={tab} counts={profile?.npcCounts ?? null} onValueChange={setTab} />
-            {activeSection === "npcs" && profile ? <NpcsSection tab={tab} counts={profile.npcCounts} /> : null}
+            {activeSection === "npcs" && profile ? (
+              <NpcsSection key={`mine-${tab}-${listRevision}`} tab={tab} counts={profile.npcCounts} />
+            ) : null}
           </div>
         )}
       </ProfileLayout>
+
+      <EditProfileDialog
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        initialName={profile?.displayName ?? ""}
+        onSubmit={onSubmit}
+      />
     </>
   );
 }

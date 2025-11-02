@@ -86,7 +86,7 @@ export function NpcParametersFormSection({ form, disabled }: NpcParametersFormSe
         )}
       />
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4">
         {LOOK_FIELD_CONFIG.map((config) => (
           <FormField
             key={config.name}
@@ -103,9 +103,7 @@ export function NpcParametersFormSection({ form, disabled }: NpcParametersFormSe
                         <span className="sr-only">More information about {config.label.toLowerCase()}</span>
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="top" align="start">
-                      {config.hint}
-                    </TooltipContent>
+                    <TooltipContent side="top">{config.hint}</TooltipContent>
                   </Tooltip>
                 </FormLabel>
                 <FormControl>
@@ -149,7 +147,7 @@ export function NpcParametersFormSection({ form, disabled }: NpcParametersFormSe
                           <span className="sr-only">Learn more about the shop module</span>
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent side="top" align="start">
+                      <TooltipContent side="top">
                         Allow the NPC to buy and sell items. Requires configuring the item assortment.
                       </TooltipContent>
                     </Tooltip>
@@ -181,7 +179,7 @@ export function NpcParametersFormSection({ form, disabled }: NpcParametersFormSe
                           <span className="sr-only">Learn more about the keyword module</span>
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent side="top" align="start">
+                      <TooltipContent side="top">
                         Let the NPC respond to custom player phrases using prepared answers.
                       </TooltipContent>
                     </Tooltip>

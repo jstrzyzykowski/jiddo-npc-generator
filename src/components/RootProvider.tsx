@@ -5,6 +5,7 @@ import { NpcListProvider } from "@/components/features/npc/list/NpcListProvider"
 import type { FilterTag, SortOption } from "@/components/features/npc/list/config";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
+import { cn } from "@/lib/utils";
 
 import { AuthProvider } from "./auth/AuthProvider";
 import { Footer } from "./layout/Footer";
@@ -19,6 +20,8 @@ interface RootProviderProps {
 
 export function RootProvider({ currentPath, pageProps, children }: RootProviderProps) {
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [renderScrollTop, setRenderScrollTop] = useState(false);
+  const [isHidingScrollTop, setIsHidingScrollTop] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -34,6 +37,23 @@ export function RootProvider({ currentPath, pageProps, children }: RootProviderP
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    if (showScrollTop) {
+      setIsHidingScrollTop(false);
+      setRenderScrollTop(true);
+      return;
+    }
+
+    if (renderScrollTop) {
+      setIsHidingScrollTop(true);
+      const timer = setTimeout(() => {
+        setRenderScrollTop(false);
+        setIsHidingScrollTop(false);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [showScrollTop, renderScrollTop]);
+
   const handleScrollTop = () => {
     if (typeof window === "undefined") {
       return;
@@ -44,18 +64,23 @@ export function RootProvider({ currentPath, pageProps, children }: RootProviderP
 
   const npcListProps = shouldProvideNpcList(currentPath, pageProps) ? pageProps : null;
 
+  const isProfilePage = currentPath.startsWith("/profile");
+
   const layout = (
     <div className="relative flex min-h-screen flex-col bg-background text-foreground">
       <Topbar />
-      <SecondaryNavbar currentPath={currentPath} />
+      {!isProfilePage ? <SecondaryNavbar currentPath={currentPath} /> : null}
       <main className="flex flex-1 flex-col">{children}</main>
       <Footer />
 
-      {showScrollTop ? (
+      {renderScrollTop ? (
         <Button
           size="icon"
           variant="secondary"
-          className="fixed bottom-20 right-6 z-50 shadow-lg"
+          className={cn(
+            "fixed bottom-20 right-6 z-50 shadow-lg",
+            isHidingScrollTop ? "animate-slide-down" : "animate-slide-up"
+          )}
           onClick={handleScrollTop}
           aria-label="Scroll to top"
         >

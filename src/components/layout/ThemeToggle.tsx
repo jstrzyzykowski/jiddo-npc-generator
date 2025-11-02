@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const STORAGE_KEY = "theme";
 
@@ -35,10 +36,9 @@ function applyTheme(theme: Theme) {
 
 interface ThemeToggleProps {
   className?: string;
-  label?: string;
 }
 
-export function ThemeToggle({ className, label }: ThemeToggleProps) {
+export function ThemeToggle({ className }: ThemeToggleProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window === "undefined") {
@@ -69,16 +69,15 @@ export function ThemeToggle({ className, label }: ThemeToggleProps) {
   const checked = theme === "dark";
 
   return (
-    <div className={cn("flex items-center gap-3", className)}>
-      {label ? <span className="text-sm text-muted-foreground">{label}</span> : null}
-      <button
-        type="button"
-        className="inline-flex items-center gap-2 rounded-md border border-transparent bg-muted/40 px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        onClick={() => handleToggle(!checked)}
-        aria-label={checked ? "Activate light mode" : "Activate dark mode"}
-      >
-        {checked ? <Moon className="size-4" /> : <Sun className="size-4" />}
-      </button>
-    </div>
+    <Button
+      type="button"
+      variant="secondary"
+      size="icon"
+      className={cn(className)}
+      onClick={() => handleToggle(!checked)}
+      aria-label={checked ? "Activate light mode" : "Activate dark mode"}
+    >
+      {checked ? <Moon className="size-4" /> : <Sun className="size-4" />}
+    </Button>
   );
 }

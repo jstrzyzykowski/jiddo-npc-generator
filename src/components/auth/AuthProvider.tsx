@@ -102,6 +102,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isLoading: state.isLoading,
       error: state.error,
       logout,
+      refresh: fetchProfile,
     }),
     [state.error, state.isLoading, state.user]
   );

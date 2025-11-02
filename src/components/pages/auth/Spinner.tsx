@@ -3,7 +3,7 @@ interface SpinnerProps {
 }
 
 export function Spinner({ label }: SpinnerProps) {
-  const message = label ?? "Trwa logowanie...";
+  const message = label ?? "Finalizing sign in...";
 
   return (
     <div className="flex flex-col items-center gap-4" role="status" aria-live="polite">

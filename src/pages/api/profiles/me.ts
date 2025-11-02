@@ -1,6 +1,11 @@
 import type { APIRoute } from "astro";
 
-import { getProfileWithNpcCounts, ProfileServiceError } from "../../../lib/services/profileService";
+import {
+  getProfileWithNpcCounts,
+  ProfileServiceError,
+  updateProfileDisplayName,
+} from "../../../lib/services/profileService";
+import { z } from "zod";
 
 export const prerender = false;
 
@@ -83,6 +88,69 @@ export const GET: APIRoute = async ({ locals }) => {
     const responseBody = await getProfileWithNpcCounts(supabase, user.id);
 
     return new Response(JSON.stringify(responseBody), {
+      status: 200,
+      headers: JSON_HEADERS,
+    });
+  } catch (error) {
+    if (error instanceof ProfileServiceError) {
+      if (error.code in ERROR_DETAILS) {
+        return createErrorResponse(error.code as ErrorCode, { cause: error });
+      }
+    }
+
+    return createErrorResponse("INTERNAL_SERVER_ERROR", { cause: error });
+  }
+};
+
+const UpdateProfileBodySchema = z.object({
+  displayName: z.string().trim().min(1, "Display name is required").max(50, "Display name too long"),
+  bio: z.string().max(250, "Bio too long").optional(),
+});
+
+export const PATCH: APIRoute = async ({ locals, request }) => {
+  const supabase = locals.supabase;
+
+  if (!supabase) {
+    return createErrorResponse("SUPABASE_NOT_INITIALIZED");
+  }
+
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error) {
+    return createErrorResponse("UNAUTHORIZED", { cause: error });
+  }
+
+  if (!user) {
+    return createErrorResponse("UNAUTHORIZED");
+  }
+
+  let payload: unknown;
+  try {
+    payload = await request.json();
+  } catch (parseError) {
+    return new Response(JSON.stringify({ error: { code: "BAD_REQUEST", message: "Invalid JSON payload" } }), {
+      status: 400,
+      headers: JSON_HEADERS,
+    });
+  }
+
+  const parsed = UpdateProfileBodySchema.safeParse(payload);
+  if (!parsed.success) {
+    return new Response(
+      JSON.stringify({
+        error: { code: "VALIDATION_ERROR", message: parsed.error.issues[0]?.message ?? "Invalid payload" },
+      }),
+      { status: 400, headers: JSON_HEADERS }
+    );
+  }
+
+  try {
+    const updated = await updateProfileDisplayName(supabase, user.id, parsed.data.displayName);
+
+    return new Response(JSON.stringify(updated), {
       status: 200,
       headers: JSON_HEADERS,
     });

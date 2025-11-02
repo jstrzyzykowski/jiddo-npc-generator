@@ -21,7 +21,7 @@ export function SortPicker() {
           <span>Sort</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-40">
+      <DropdownMenuContent className="min-w-40">
         {SORT_OPTIONS.map((option) => (
           <DropdownMenuItem
             key={option.value}

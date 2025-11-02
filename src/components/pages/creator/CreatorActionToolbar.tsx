@@ -43,7 +43,7 @@ export function CreatorActionToolbar({
 
   return (
     <footer className="sticky bottom-0 left-0 right-0 z-10 border-t border-border/60 pt-4 backdrop-blur">
-      <div className="mx-auto flex w-full flex-col gap-3 px-2">
+      <div className="mx-auto flex w-full flex-col gap-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
           {showSaveDraft ? (
             <Button type="button" onClick={onSaveDraft} disabled={!canSubmit} className="w-full sm:w-auto">

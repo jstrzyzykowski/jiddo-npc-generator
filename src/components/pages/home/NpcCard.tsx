@@ -1,4 +1,4 @@
-import { CircleHelp, MessageSquareText, ShoppingBag } from "lucide-react";
+import { CircleHelp, MessageSquareText, ShoppingBag, Save } from "lucide-react";
 import { useCallback } from "react";
 
 import { NpcOwnerActions } from "@/components/features/npc/actions/NpcOwnerActions";
@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import type { NpcListItemDto } from "@/types";
 import outfitPreview from "@/assets/images/Outfit_Martial_Artist_Female_Addon_3.gif";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/components/auth/useAuth";
 import { toast } from "sonner";
 
@@ -105,7 +106,7 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
             <CardTitle className="text-xl font-semibold text-foreground transition-colors group-hover:text-primary">
               {npc.name}
             </CardTitle>
-            <p className="text-sm text-muted-foreground">by {ownerName}</p>
+            <p className="text-sm text-muted-foreground">{ownerName}</p>
           </CardHeader>
         </div>
 
@@ -127,7 +128,17 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
         <CardFooter className="mt-auto flex items-center justify-between px-6 pt-0 text-xs text-muted-foreground">
           <div className="flex flex-col gap-1">
             <span>Updated {updatedLabel}</span>
-            <span>{formatSize(npc.contentSizeBytes)}</span>
+            <span className="inline-flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex text-muted-foreground" aria-label="XML size">
+                    <Save className="size-3.5" aria-hidden />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top">XML size</TooltipContent>
+              </Tooltip>
+              {formatSize(npc.contentSizeBytes)}
+            </span>
           </div>
 
           <HoverCard openDelay={0} closeDelay={0}>
@@ -147,7 +158,7 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
               <dl className="grid grid-cols-1 gap-2 text-xs">
                 <div className="flex items-center justify-between">
                   <dt className="font-medium text-muted-foreground">Status</dt>
-                  <dd className="uppercase text-foreground">{npc.status}</dd>
+                  <dd className="text-foreground capitalize">{npc.status}</dd>
                 </div>
                 <div className="flex items-center justify-between">
                   <dt className="font-medium text-muted-foreground">Published</dt>
@@ -218,7 +229,7 @@ function formatDateLabel(isoDate: string): string {
 
 function formatSize(sizeInBytes: number): string {
   if (!Number.isFinite(sizeInBytes) || sizeInBytes <= 0) {
-    return "size unknown";
+    return "Not Generated";
   }
 
   const kilobytes = sizeInBytes / 1024;

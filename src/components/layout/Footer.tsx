@@ -4,10 +4,24 @@ export function Footer() {
       <div className="mx-auto flex h-12 w-full max-w-[1200px] items-center justify-between gap-4 px-4 text-sm text-muted-foreground">
         <span>© Jiddo NPC {new Date().getFullYear()}</span>
         <div className="flex items-center gap-3">
-          <a href="/terms" className="hidden text-muted-foreground transition-colors hover:text-foreground sm:inline">
+          <a
+            href="/terms"
+            aria-disabled="true"
+            tabIndex={-1}
+            onClick={(e) => e.preventDefault()}
+            className="text-muted-foreground opacity-60 cursor-not-allowed pointer-events-none"
+            title="Coming soon"
+          >
             Terms of Service
           </a>
-          <a href="/privacy" className="hidden text-muted-foreground transition-colors hover:text-foreground sm:inline">
+          <a
+            href="/privacy"
+            aria-disabled="true"
+            tabIndex={-1}
+            onClick={(e) => e.preventDefault()}
+            className="text-muted-foreground opacity-60 cursor-not-allowed pointer-events-none"
+            title="Coming soon"
+          >
             Privacy
           </a>
         </div>

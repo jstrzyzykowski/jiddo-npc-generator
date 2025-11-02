@@ -8,4 +8,5 @@ export interface AuthContextType {
   isLoading: boolean;
   error: Error | null;
   logout: () => Promise<void>;
+  refresh: () => Promise<void>;
 }

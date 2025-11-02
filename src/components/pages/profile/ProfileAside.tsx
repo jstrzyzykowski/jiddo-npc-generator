@@ -1,5 +1,7 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { FileEdit, CheckCircle } from "lucide-react";
 import type { GetProfileMeResponseDto } from "@/types";
 
 interface ProfileAsideProps {
@@ -11,7 +13,11 @@ interface ProfileAsideProps {
 export function ProfileAside({ profile, loading, error }: ProfileAsideProps) {
   if (loading) {
     return (
-      <div className="flex flex-col gap-4" aria-busy="true" aria-live="polite">
+      <div
+        className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        aria-busy="true"
+        aria-live="polite"
+      >
         <div className="flex items-center gap-3">
           <Skeleton className="size-12 rounded-full" />
           <div className="flex flex-col gap-2">
@@ -19,7 +25,16 @@ export function ProfileAside({ profile, loading, error }: ProfileAsideProps) {
             <Skeleton className="h-3 w-28" />
           </div>
         </div>
-        <Skeleton className="h-20 w-full" />
+        <div className="flex items-center gap-4 text-sm">
+          <span className="inline-flex items-center gap-2">
+            <Skeleton className="size-4 rounded-full" />
+            <Skeleton className="h-4 w-8" />
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <Skeleton className="size-4 rounded-full" />
+            <Skeleton className="h-4 w-8" />
+          </span>
+        </div>
       </div>
     );
   }
@@ -48,25 +63,42 @@ export function ProfileAside({ profile, loading, error }: ProfileAsideProps) {
   const joined = formatDate(profile.createdAt);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <Avatar className="size-12">
-          <AvatarFallback aria-hidden>{initials}</AvatarFallback>
-        </Avatar>
-        <div className="flex min-w-0 flex-col">
-          <span className="truncate text-base font-semibold">{profile.displayName}</span>
-          {joined ? <span className="text-xs text-muted-foreground">Joined {joined}</span> : null}
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <Avatar className="size-12">
+            <AvatarFallback aria-hidden>{initials}</AvatarFallback>
+          </Avatar>
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-base font-semibold">{profile.displayName}</span>
+            {joined ? <span className="text-xs text-muted-foreground">Joined {joined}</span> : null}
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-2 rounded-lg border p-3 text-sm">
-        <div className="flex flex-col rounded-md bg-muted/40 p-3 text-center">
-          <span className="text-xs text-muted-foreground">Drafts</span>
-          <span className="text-lg font-semibold tabular-nums">{profile.npcCounts.draft ?? 0}</span>
-        </div>
-        <div className="flex flex-col rounded-md bg-muted/40 p-3 text-center">
-          <span className="text-xs text-muted-foreground">Published</span>
-          <span className="text-lg font-semibold tabular-nums">{profile.npcCounts.published ?? 0}</span>
+        <div className="flex items-center gap-4 text-sm" aria-label="Profile statistics">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex items-center gap-2 text-muted-foreground" aria-label="Draft NPCs">
+                <FileEdit className="size-4" aria-hidden />
+                <span className="text-base font-semibold tabular-nums text-foreground">
+                  {profile.npcCounts.draft ?? 0}
+                </span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top">Draft NPCs</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex items-center gap-2 text-muted-foreground" aria-label="Published NPCs">
+                <CheckCircle className="size-4" aria-hidden />
+                <span className="text-base font-semibold tabular-nums text-foreground">
+                  {profile.npcCounts.published ?? 0}
+                </span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top">Published NPCs</TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </div>

@@ -86,9 +86,7 @@ export function ShopItemCard({ form, index, onRemove, disabled }: ShopItemCardPr
                       <span className="sr-only">Learn more about item ID</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" align="start">
-                    Provide the numeric item identifier used by the server.
-                  </TooltipContent>
+                  <TooltipContent side="top">Provide the numeric item identifier used by the server.</TooltipContent>
                 </Tooltip>
               </FormLabel>
               <FormControl>
@@ -120,9 +118,7 @@ export function ShopItemCard({ form, index, onRemove, disabled }: ShopItemCardPr
                       <span className="sr-only">Learn more about pricing</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" align="start">
-                    Use whole numbers representing the cost in gold coins.
-                  </TooltipContent>
+                  <TooltipContent side="top">Use whole numbers representing the cost in gold coins.</TooltipContent>
                 </Tooltip>
               </FormLabel>
               <FormControl>
@@ -154,9 +150,7 @@ export function ShopItemCard({ form, index, onRemove, disabled }: ShopItemCardPr
                       <span className="sr-only">Learn more about subtype</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" align="start">
-                    Set a subtype or action ID for stackable or special items.
-                  </TooltipContent>
+                  <TooltipContent side="top">Set a subtype or action ID for stackable or special items.</TooltipContent>
                 </Tooltip>
               </FormLabel>
               <FormControl>
@@ -188,9 +182,7 @@ export function ShopItemCard({ form, index, onRemove, disabled }: ShopItemCardPr
                       <span className="sr-only">Learn more about charges</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" align="start">
-                    Specify the number of charges or uses for the item.
-                  </TooltipContent>
+                  <TooltipContent side="top">Specify the number of charges or uses for the item.</TooltipContent>
                 </Tooltip>
               </FormLabel>
               <FormControl>
@@ -222,7 +214,7 @@ export function ShopItemCard({ form, index, onRemove, disabled }: ShopItemCardPr
                       <span className="sr-only">Learn more about alternative name</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" align="start">
+                  <TooltipContent side="top">
                     Provide a display name shown to players instead of the default.
                   </TooltipContent>
                 </Tooltip>
@@ -249,7 +241,7 @@ export function ShopItemCard({ form, index, onRemove, disabled }: ShopItemCardPr
                       <span className="sr-only">Learn more about container ID</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" align="start">
+                  <TooltipContent side="top">
                     Define the container item that holds this entry when sold as a bundle.
                   </TooltipContent>
                 </Tooltip>

@@ -84,7 +84,7 @@ export function NpcOwnerActions({
           <button
             type="button"
             className={cn(
-              "inline-flex size-10 items-center justify-center rounded-full bg-background/80 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "inline-flex size-8 items-center justify-center rounded-full focus-visible:ring-2 focus-visible:ring-ring",
               triggerClassName
             )}
             aria-label="Owner actions"

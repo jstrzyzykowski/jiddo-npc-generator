@@ -41,8 +41,8 @@ export function GuestNav({ className }: GuestNavProps) {
             </a>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <div className="px-2 py-1.5">
-            <ThemeToggle className="w-full justify-between" label="Dark mode" />
+          <div className="flex items-center gap-2 px-1 py-1">
+            <ThemeToggle className="flex-1" />
           </div>
         </DropdownMenuContent>
       </DropdownMenu>

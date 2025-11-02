@@ -81,9 +81,7 @@ export function KeywordCard({ form, index, onRemove, disabled }: KeywordCardProp
                       <span className="sr-only">Learn more about NPC response</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" align="start">
-                    Text the NPC will send when the keyword is matched.
-                  </TooltipContent>
+                  <TooltipContent side="top">Text the NPC will send when the keyword is matched.</TooltipContent>
                 </Tooltip>
               </FormLabel>
               <FormControl>
