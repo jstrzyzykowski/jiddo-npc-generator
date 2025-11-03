@@ -5,7 +5,7 @@ import { InfiniteScrollTrigger } from "@/components/shared/InfiniteScrollTrigger
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import type { NpcListItemDto } from "@/types";
+import type { NpcListItemDto } from "@/types/npc";
 
 import type { NpcListStatus } from "./useNpcList";
 

@@ -5,7 +5,8 @@ import { FilterTags } from "@/components/features/npc/list/FilterTags";
 import { NpcGrid } from "@/components/features/npc/list/NpcGrid";
 import { useNpcList } from "@/components/features/npc/list/useNpcList";
 import { DEFAULT_FILTER, DEFAULT_SORT } from "@/components/features/npc/list/config";
-import type { GetNpcListResponseDto, ProfileNpcCountsDto } from "@/types";
+import type { GetNpcListResponseDto } from "@/types/npc";
+import type { ProfileNpcCountsDto } from "@/types/profile";
 import { toast } from "sonner";
 
 import type { TabKey } from "./NpcTabs";
@@ -68,7 +69,6 @@ function NpcsSectionInner({ tab }: NpcsSectionProps) {
         onLoadMore={loadMore}
         onRetry={refresh}
         onRefresh={refresh}
-        variant="profile"
       />
     </div>
   );

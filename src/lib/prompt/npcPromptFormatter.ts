@@ -1,4 +1,4 @@
-import type { NpcDetailResponseDto } from "@/types";
+import type { NpcDetailResponseDto } from "@/types/npc";
 
 export interface PromptNpcModel {
   name?: string | null;

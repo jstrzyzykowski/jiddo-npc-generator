@@ -12,7 +12,7 @@ import type {
   TriggerNpcGenerationCommand,
   TriggerNpcGenerationQueryDto,
   UpdateNpcCommand,
-} from "../../types";
+} from "@/types/npc";
 const CURSOR_MAX_LENGTH = 1024;
 const SEARCH_MAX_LENGTH = 255;
 const LIMIT_DEFAULT = 20;

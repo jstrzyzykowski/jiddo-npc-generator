@@ -1,4 +1,4 @@
-import type { GetNpcListQueryDto } from "@/types";
+import type { GetNpcListQueryDto } from "@/types/npc";
 
 export type SortValue = "newest" | "oldest";
 export type FilterValue = "all" | "shop" | "keywords";

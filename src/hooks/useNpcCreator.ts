@@ -23,7 +23,7 @@ import type {
   NpcLookDto,
   NpcShopItemDto,
   TriggerNpcGenerationResponseDto,
-} from "@/types";
+} from "@/types/npc";
 
 type CreatorMode = "create" | "edit";
 

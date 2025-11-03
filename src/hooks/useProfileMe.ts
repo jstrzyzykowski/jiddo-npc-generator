@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { GetProfileMeResponseDto } from "@/types";
+import type { GetProfileMeResponseDto } from "@/types/profile";
 
 interface UseProfileMeResult {
   profile: GetProfileMeResponseDto | null;

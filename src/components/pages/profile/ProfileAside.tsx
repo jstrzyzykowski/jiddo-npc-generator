@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FileEdit, CheckCircle } from "lucide-react";
-import type { GetProfileMeResponseDto } from "@/types";
+import type { GetProfileMeResponseDto } from "@/types/profile";
 
 interface ProfileAsideProps {
   profile: GetProfileMeResponseDto | null;

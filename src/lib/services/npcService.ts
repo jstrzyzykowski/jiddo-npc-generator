@@ -27,7 +27,6 @@ import type {
   NpcLookDto,
   NpcMessagesDto,
   NpcModulesDto,
-  NpcOwnerSummaryDto,
   NpcShopItemDto,
   NpcStatsDto,
   PublishNpcResponseDto,
@@ -36,7 +35,8 @@ import type {
   TriggerNpcGenerationResponseDto,
   UpdateNpcCommand,
   UpdateNpcResponseDto,
-} from "../../types";
+} from "@/types/npc";
+import type { NpcOwnerSummaryDto } from "@/types/profile";
 import { createEvent as createTelemetryEvent, TelemetryServiceError } from "./telemetryService";
 
 type NpcInsert = Database["public"]["Tables"]["npcs"]["Insert"];

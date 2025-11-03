@@ -5,7 +5,7 @@ import { NpcOwnerActions } from "@/components/features/npc/actions/NpcOwnerActio
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { NpcListItemDto } from "@/types";
+import type { NpcListItemDto } from "@/types/npc";
 import outfitPreview from "@/assets/images/Outfit_Martial_Artist_Female_Addon_3.gif";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";

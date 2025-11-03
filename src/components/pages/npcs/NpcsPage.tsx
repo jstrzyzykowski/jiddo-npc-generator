@@ -3,7 +3,7 @@ import type { FilterTag, SortOption } from "@/components/features/npc/list/confi
 import { FilterTags } from "@/components/features/npc/list/FilterTags";
 import { NpcGrid } from "@/components/features/npc/list/NpcGrid";
 import { useNpcList } from "@/components/features/npc/list/useNpcList";
-import type { GetNpcListResponseDto } from "@/types";
+import type { GetNpcListResponseDto } from "@/types/npc";
 
 export interface NpcsPageProps extends AppShellProps {
   initialSort: SortOption;

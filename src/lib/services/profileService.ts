@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "../../db/supabase.client";
 import type { Database } from "../../db/database.types";
-import type { ProfileNpcCountsDto, GetProfileMeResponseDto } from "../../types";
+import type { ProfileNpcCountsDto, GetProfileMeResponseDto } from "@/types/profile";
 
 const PROFILE_SELECT_COLUMNS = "id, display_name, created_at, updated_at" as const;
 const LOG_PREFIX = "profileService";

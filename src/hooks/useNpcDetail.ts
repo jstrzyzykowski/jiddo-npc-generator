@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import defaultLuaTemplate from "@/assets/lua/default.lua?raw";
 import { useAuth } from "@/components/auth/useAuth";
 import type { NpcDetailViewModel, NpcMetadataViewModel } from "@/components/features/npc/detail/types";
-import type { NpcDetailResponseDto, PublishNpcResponseDto } from "@/types";
+import type { NpcDetailResponseDto, PublishNpcResponseDto } from "@/types/npc";
 import { toast } from "sonner";
 
 const COPY_SIZE_LIMIT_BYTES = 262_144; // 256 KB

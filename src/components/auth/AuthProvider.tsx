@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { supabaseClient } from "@/db/supabase.client";
-import type { GetProfileMeResponseDto } from "@/types";
+import type { GetProfileMeResponseDto } from "@/types/profile";
 
 import { AuthContext } from "./AuthContext";
 import type { AuthContextType, UserViewModel } from "./types";

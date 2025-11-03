@@ -1,38 +1,18 @@
-// DTO and Command Model definitions derived from Supabase entities and API plan
-import type { Tables, TablesInsert, TablesUpdate, Enums } from "./db/database.types";
+import type { Tables, TablesInsert, TablesUpdate, Enums } from "../db/database.types";
+import type { DeepPartial, PaginationResponse } from "./common";
+import type { NpcOwnerSummaryDto } from "./profile";
 
-type ProfileRow = Tables<"profiles">;
 type NpcRow = Tables<"npcs">;
 type NpcInsert = TablesInsert<"npcs">;
 type NpcUpdate = TablesUpdate<"npcs">;
 type NpcShopItemRow = Tables<"npc_shop_items">;
 type NpcKeywordRow = Tables<"npc_keywords">;
 type NpcKeywordPhraseRow = Tables<"npc_keyword_phrases">;
-type TelemetryEventRow = Tables<"telemetry_events">;
 
 type NpcStatus = Enums<"npc_status">;
 type NpcShopItemListType = Enums<"npc_shop_item_list_type">;
 
-type IsoDateString = NpcRow["created_at"];
-
-// Simplify recursive partial to avoid union distribution across primitives
-type DeepPartial<T> = {
-  [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K];
-};
-
-/**
- * Pagination metadata shared by cursor-based endpoints.
- * `total` is omitted when not supplied by the backend (e.g., keywords listing).
- */
-export interface CursorPageInfo {
-  nextCursor: string | null;
-  total?: number | null;
-}
-
-export interface PaginationResponse<TItem> {
-  items: TItem[];
-  pageInfo: CursorPageInfo;
-}
+export type IsoDateString = NpcRow["created_at"];
 
 export interface NpcLookDto {
   type: NpcRow["look_type"];
@@ -144,11 +124,6 @@ export interface GetNpcListQueryDto {
   cursor?: string;
   sort?: "published_at" | "updated_at" | "created_at";
   order?: "asc" | "desc";
-}
-
-export interface NpcOwnerSummaryDto {
-  id: ProfileRow["id"];
-  displayName: ProfileRow["display_name"];
 }
 
 export type NpcListModulesDto = Pick<NpcModulesDto, "shopEnabled" | "keywordsEnabled">;
@@ -342,36 +317,4 @@ export type AddNpcKeywordPhraseResponseDto = NpcKeywordPhraseDto;
 export interface DeleteNpcKeywordPhraseResponseDto {
   id: NpcKeywordPhraseRow["id"];
   deletedAt: NonNullable<NpcKeywordPhraseRow["deleted_at"]>;
-}
-
-export type TelemetryEventType = "NPC_CREATED" | "NPC_PUBLISHED" | "AI_ERROR" | "NPC_DELETED";
-
-export interface CreateTelemetryEventCommand {
-  eventType: TelemetryEventType;
-  userId: TelemetryEventRow["user_id"];
-  npcId: TelemetryEventRow["npc_id"];
-  metadata?: TelemetryEventRow["metadata"];
-}
-
-export interface CreateTelemetryEventResponseDto {
-  id: TelemetryEventRow["id"];
-  createdAt: TelemetryEventRow["created_at"];
-}
-
-export interface HealthResponseDto {
-  status: "ok";
-  timestamp: IsoDateString;
-}
-
-export interface ProfileNpcCountsDto {
-  draft: number;
-  published: number;
-}
-
-export interface GetProfileMeResponseDto {
-  id: ProfileRow["id"];
-  displayName: ProfileRow["display_name"];
-  createdAt: ProfileRow["created_at"];
-  updatedAt: ProfileRow["updated_at"];
-  npcCounts: ProfileNpcCountsDto;
 }

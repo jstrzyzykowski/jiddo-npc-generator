@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { z } from "zod";
 
-import type { GetNpcKeywordsResponseDto } from "../../../../types";
+import type { GetNpcKeywordsResponseDto } from "@/types/npc";
 import { NpcService, NpcServiceError } from "../../../../lib/services/npcService";
 import { parseBulkReplaceNpcKeywordsCommand } from "../../../../lib/validators/npcValidators";
 

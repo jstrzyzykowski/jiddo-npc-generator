@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { ProfileNpcCountsDto } from "@/types";
+import type { ProfileNpcCountsDto } from "@/types/profile";
 
 export type TabKey = "drafts" | "published";
 

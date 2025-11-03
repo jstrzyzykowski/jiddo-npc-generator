@@ -1,8 +1,8 @@
 import type { APIRoute } from "astro";
 
-import type { GetFeaturedNpcsQueryDto } from "../../../types";
-import { parseGetFeaturedNpcsQueryParams } from "../../../lib/validators/npcValidators";
-import { NpcService, NpcServiceError } from "../../../lib/services/npcService";
+import type { GetFeaturedNpcsQueryDto } from "@/types/npc";
+import { parseGetFeaturedNpcsQueryParams } from "@/lib/validators/npcValidators";
+import { NpcService, NpcServiceError } from "@/lib/services/npcService";
 
 export const prerender = false;
 

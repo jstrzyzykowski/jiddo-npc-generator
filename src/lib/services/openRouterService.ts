@@ -315,7 +315,7 @@ export class OpenRouterService {
   private buildNpcPrompts(npc: NpcDetailResponseDto) {
     const systemPrompt = npcXmlGeneratorSystemPrompt;
 
-    const npcSection = formatNpcForPromptFromNpc(npc as unknown as import("@/types").NpcDetailResponseDto);
+    const npcSection = formatNpcForPromptFromNpc(npc as unknown as NpcDetailResponseDto);
     const userPrompt = `Generate an NPC XML based on the following data.\n\n${npcSection}`;
 
     return { systemPrompt, userPrompt };

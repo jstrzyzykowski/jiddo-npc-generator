@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import type { GenerationJobStatusResponseDto } from "@/types";
+import type { GenerationJobStatusResponseDto } from "@/types/npc";
 
 const DEFAULT_INTERVAL_MS = 2500;
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { createNpcListQuery } from "./config";
 import { useNpcListContext } from "./NpcListProvider";
-import type { GetNpcListQueryDto, GetNpcListResponseDto, NpcListItemDto } from "@/types";
+import type { GetNpcListQueryDto, GetNpcListResponseDto, NpcListItemDto } from "@/types/npc";
 
 export type NpcListStatus = "idle" | "loading" | "loading-more" | "success" | "error";
 

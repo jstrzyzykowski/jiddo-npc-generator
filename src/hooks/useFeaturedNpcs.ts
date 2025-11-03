@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import type { GetFeaturedNpcsResponseDto, NpcListItemDto } from "@/types";
+import type { GetFeaturedNpcsResponseDto, NpcListItemDto } from "@/types/npc";
 
 import { useAuth } from "@/components/auth/useAuth";
 
