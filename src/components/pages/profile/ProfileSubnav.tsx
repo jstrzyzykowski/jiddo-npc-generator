@@ -21,7 +21,7 @@ export function ProfileSubnav({ active, totalCount, onChange }: ProfileSubnavPro
           aria-current={active === "npcs" ? "page" : undefined}
         >
           NPCs
-          <Badge className="rounded-md bg-background text-foreground border-border/60 text-[11px]">
+          <Badge className="rounded-md bg-primary text-primary-foreground border-border/60 text-[11px]">
             {Math.max(0, totalCount)}
           </Badge>
         </button>
