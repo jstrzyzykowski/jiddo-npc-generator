@@ -130,7 +130,7 @@ export const PATCH: APIRoute = async ({ locals, request }) => {
   let payload: unknown;
   try {
     payload = await request.json();
-  } catch (parseError) {
+  } catch {
     return new Response(JSON.stringify({ error: { code: "BAD_REQUEST", message: "Invalid JSON payload" } }), {
       status: 400,
       headers: JSON_HEADERS,
