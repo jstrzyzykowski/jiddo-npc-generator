@@ -1,6 +1,6 @@
-import type { SupabaseClient } from "../../db/supabase.client";
-import type { Database } from "../../db/database.types";
-import type { CreateTelemetryEventCommand, CreateTelemetryEventResponseDto } from "../../types";
+import type { SupabaseClient } from "@/db/supabase.client";
+import type { Database } from "@/db/database.types";
+import type { CreateTelemetryEventCommand, CreateTelemetryEventResponseDto } from "@/types/telemetry";
 
 const SERVICE_NAME = "telemetryService";
 

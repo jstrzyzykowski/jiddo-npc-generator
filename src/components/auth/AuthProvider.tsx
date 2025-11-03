@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { supabaseClient } from "@/db/supabase.client";
 import type { GetProfileMeResponseDto } from "@/types/profile";
 
-import { AuthContext } from "./AuthContext";
-import type { AuthContextType, UserViewModel } from "./types";
+import { AuthContext } from "@/features/auth/context";
+import type { AuthContextType, UserViewModel } from "@/components/auth/types";
 
 const LOG_PREFIX = "AuthProvider";
 

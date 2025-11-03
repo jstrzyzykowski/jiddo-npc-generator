@@ -37,7 +37,7 @@ import type {
   UpdateNpcResponseDto,
 } from "@/types/npc";
 import type { NpcOwnerSummaryDto } from "@/types/profile";
-import { createEvent as createTelemetryEvent, TelemetryServiceError } from "./telemetryService";
+import { createEvent as createTelemetryEvent, TelemetryServiceError } from "@/services/telemetryService";
 
 type NpcInsert = Database["public"]["Tables"]["npcs"]["Insert"];
 type NpcRow = Database["public"]["Tables"]["npcs"]["Row"];
