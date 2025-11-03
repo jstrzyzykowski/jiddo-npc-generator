@@ -12,8 +12,6 @@ export function InfiniteScrollTrigger({
   rootMargin = "200px",
 }: InfiniteScrollTriggerProps) {
   const elementRef = useRef<HTMLDivElement | null>(null);
-  const callbackRef = useRef(onTrigger);
-  callbackRef.current = onTrigger;
 
   useEffect(() => {
     const node = elementRef.current;
@@ -29,14 +27,14 @@ export function InfiniteScrollTrigger({
           return;
         }
 
-        callbackRef.current();
+        onTrigger();
       },
       { root: null, rootMargin }
     );
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [disabled, rootMargin]);
+  }, [disabled, rootMargin, onTrigger]);
 
   return <div ref={elementRef} aria-hidden="true" />;
 }
