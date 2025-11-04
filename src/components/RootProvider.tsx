@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 
-import { AuthProvider } from "./auth/AuthProvider";
-import { Footer } from "./layout/Footer/Footer";
-import { SecondaryNavbar } from "./layout/SecondaryNavbar/SecondaryNavbar";
-import { Topbar } from "@/components/layout/Topbar";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import { Footer } from "@/components/layout/Footer/Footer";
+import { SecondaryNavbar } from "@/components/layout/SecondaryNavbar/SecondaryNavbar";
+import { Topbar } from "@/components/layout/Topbar/Topbar";
 
 interface RootProviderProps {
   currentPath: string;

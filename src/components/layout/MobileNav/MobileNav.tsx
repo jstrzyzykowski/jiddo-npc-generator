@@ -7,7 +7,7 @@ import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTrigger } from "@/c
 import { cn } from "@/lib/utils";
 
 import { useAuth } from "../../auth/useAuth";
-import { ThemeToggle } from "../ThemeToggle";
+import { ThemeToggle } from "../ThemeToggle/ThemeToggle";
 
 interface MobileNavProps {
   className?: string;

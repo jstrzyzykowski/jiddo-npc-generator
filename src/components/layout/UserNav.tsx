@@ -1,8 +1,7 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-
 import { useAuth } from "../auth/useAuth";
-import { UserDropdown } from "./UserDropdown";
+import { UserDropdown } from "./UserDropdown/UserDropdown";
 import { Button } from "../ui/button";
 
 export function UserNav() {

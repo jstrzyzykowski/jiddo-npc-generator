@@ -9,8 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-import { useAuth } from "../auth/useAuth";
-import { ThemeToggle } from "./ThemeToggle";
+import { useAuth } from "../../auth/useAuth";
+import { ThemeToggle } from "../ThemeToggle/ThemeToggle";
 
 interface UserDropdownProps {
   className?: string;

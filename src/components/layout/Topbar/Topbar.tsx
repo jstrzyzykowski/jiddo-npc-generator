@@ -2,12 +2,12 @@ import { Search } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-import { useAuth } from "../auth/useAuth";
-import { CreateNpcButton } from "./CreateNpcButton/CreateNpcButton";
-import { GuestNav } from "./GuestNav/GuestNav";
-import { LogoLink } from "./LogoLink/LogoLink";
-import { MobileNav } from "./MobileNav/MobileNav";
-import { UserNav } from "./UserNav";
+import { useAuth } from "../../auth/useAuth";
+import { CreateNpcButton } from "../CreateNpcButton/CreateNpcButton";
+import { GuestNav } from "../GuestNav/GuestNav";
+import { LogoLink } from "../LogoLink/LogoLink";
+import { MobileNav } from "../MobileNav/MobileNav";
+import { UserNav } from "../UserNav";
 
 interface TopbarProps {
   className?: string;
