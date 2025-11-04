@@ -29,3 +29,8 @@ spec/
 # Supabase
 supabase/.temp/
 supabase/logs/
+
+# Test artifacts
+test-results/
+playwright-report/
+coverage/
