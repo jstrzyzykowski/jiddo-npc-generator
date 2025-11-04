@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
-import { useAuth } from "../auth/useAuth";
-import { ThemeToggle } from "./ThemeToggle";
+import { useAuth } from "../../auth/useAuth";
+import { ThemeToggle } from "../ThemeToggle";
 
 interface MobileNavProps {
   className?: string;
