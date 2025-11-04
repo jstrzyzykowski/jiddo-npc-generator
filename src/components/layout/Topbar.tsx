@@ -14,7 +14,7 @@ interface TopbarProps {
 }
 
 export function Topbar({ className }: TopbarProps) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
 
   return (
     <header
@@ -34,7 +34,13 @@ export function Topbar({ className }: TopbarProps) {
 
           <CreateNpcButton className="hidden md:inline-flex" />
 
-          {user ? <UserNav /> : <GuestNav className="hidden md:flex" />}
+          {isLoading ? (
+            <div className="size-9 animate-pulse rounded-full bg-muted" />
+          ) : user ? (
+            <UserNav />
+          ) : (
+            <GuestNav className="hidden md:flex" />
+          )}
 
           <MobileNav className="md:hidden" />
         </div>

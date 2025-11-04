@@ -26,6 +26,7 @@ export function UserDropdown({ className, onLogout }: UserDropdownProps) {
 
   const handleLogout = async () => {
     await logout();
+    window.location.href = "/";
     onLogout?.();
   };
 

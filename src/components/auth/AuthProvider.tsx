@@ -14,12 +14,14 @@ interface AuthProviderProps {
 
 interface AuthState {
   user: UserViewModel | null;
+  profile: GetProfileMeResponseDto | null;
   isLoading: boolean;
   error: Error | null;
 }
 
 const INITIAL_STATE: AuthState = {
   user: null,
+  profile: null,
   isLoading: true,
   error: null,
 };
@@ -36,7 +38,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           fetchProfile();
         }
       } else if (event === "SIGNED_OUT") {
-        setState({ user: null, isLoading: false, error: null });
+        setState({ user: null, profile: null, isLoading: false, error: null });
       }
     });
 
@@ -60,7 +62,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (!response.ok) {
         if (response.status === 401) {
-          setState({ user: null, isLoading: false, error: null });
+          setState({ user: null, profile: null, isLoading: false, error: null });
           return;
         }
 
@@ -71,13 +73,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       setState({
         user: mapProfileToUser(profile),
+        profile,
         isLoading: false,
         error: null,
       });
     } catch (error) {
       console.error(`${LOG_PREFIX}: fetchProfile`, error);
 
-      setState({ user: null, isLoading: false, error: error instanceof Error ? error : new Error("Unknown error") });
+      setState({
+        user: null,
+        profile: null,
+        isLoading: false,
+        error: error instanceof Error ? error : new Error("Unknown error"),
+      });
     }
   };
   const logout = async () => {
@@ -88,7 +96,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw error;
       }
 
-      setState({ user: null, isLoading: false, error: null });
+      setState({ user: null, profile: null, isLoading: false, error: null });
     } catch (error) {
       console.error(`${LOG_PREFIX}: logout`, error);
 
@@ -99,12 +107,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const value = useMemo<AuthContextType>(
     () => ({
       user: state.user,
+      profile: state.profile,
       isLoading: state.isLoading,
       error: state.error,
       logout,
       refresh: fetchProfile,
     }),
-    [state.error, state.isLoading, state.user]
+    [state.error, state.isLoading, state.user, state.profile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

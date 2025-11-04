@@ -11,13 +11,17 @@ interface UseFeaturedNpcsState {
 }
 
 export function useFeaturedNpcs() {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [state, setState] = useState<UseFeaturedNpcsState>({ npcs: null, isLoading: true, error: null });
   const [requestId, setRequestId] = useState(0);
 
   const limit = useMemo(() => (user ? 8 : 6), [user]);
 
   useEffect(() => {
+    if (isAuthLoading) {
+      return;
+    }
+
     let isActive = true;
     const controller = new AbortController();
 
@@ -64,7 +68,7 @@ export function useFeaturedNpcs() {
       isActive = false;
       controller.abort();
     };
-  }, [limit, requestId]);
+  }, [limit, requestId, isAuthLoading]);
 
   const retry = () => {
     setRequestId((id) => id + 1);
@@ -72,7 +76,7 @@ export function useFeaturedNpcs() {
 
   return {
     npcs: state.npcs,
-    isLoading: state.isLoading,
+    isLoading: state.isLoading || isAuthLoading,
     error: state.error,
     limit,
     isAuthenticated: Boolean(user),
