@@ -22,3 +22,8 @@ CI/CD i Hosting:
 
 - Github Actions do tworzenia pipeline’ów CI/CD
 - Vercel do hostowania aplikacji
+
+Testowanie:
+
+- Vitest i React Testing Library posłużą do pisania testów jednostkowych i integracyjnych, weryfikując poprawność komponentów i logiki
+- Playwright zostanie wykorzystany do testów End-to-End (E2E), które automatyzują całe scenariusze użytkownika w przeglądarce

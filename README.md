@@ -31,6 +31,7 @@ For full product requirements, see the PRD.
 - Backend: Supabase (Auth, Database, Storage)
 - AI provider: OpenRouter.ai (access to multiple model vendors)
 - Tooling: ESLint 9, Prettier (with `prettier-plugin-astro`)
+- Testing (planned): Vitest and React Testing Library for unit/integration tests, Playwright for E2E tests
 - CI/CD & hosting (planned): GitHub Actions, Netlify
 
 References:
