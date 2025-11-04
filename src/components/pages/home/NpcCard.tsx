@@ -65,6 +65,8 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
     }
   };
 
+  const linkUrl = npc.status === "published" ? `/npcs/${npc.id}` : `/creator/${npc.id}`;
+
   return (
     <Card
       className={cn(
@@ -84,7 +86,7 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
       />
 
       <a
-        href={`/npcs/${npc.id}`}
+        href={linkUrl}
         className="group relative flex h-full flex-1 flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <div
