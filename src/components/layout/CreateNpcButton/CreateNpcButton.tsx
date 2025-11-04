@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-import { useAuth } from "../auth/useAuth";
+import { useAuth } from "../../auth/useAuth";
 
 interface CreateNpcButtonProps {
   className?: string;

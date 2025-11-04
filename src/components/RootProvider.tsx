@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 
 import { AuthProvider } from "./auth/AuthProvider";
-import { Footer } from "./layout/Footer";
+import { Footer } from "./layout/Footer/Footer";
 import { SecondaryNavbar } from "./layout/SecondaryNavbar";
 import { Topbar } from "./layout/Topbar";
 
