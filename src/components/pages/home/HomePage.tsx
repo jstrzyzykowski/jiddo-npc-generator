@@ -39,7 +39,7 @@ export default function HomePage() {
           ) : (
             <>
               {npcs?.map((npc) => (
-                <NpcCard key={npc.id} npc={npc} showActions={false} showInfoHover={false} />
+                <NpcCard key={npc.id} npc={npc} />
               ))}
               {Array.from({ length: getRemainingSlots(npcs?.length ?? 0, isAuthenticated) }).map((_, index) => (
                 <NpcPlaceholderCard key={`slot-${index}`} label="More featured NPC soon" />

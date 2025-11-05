@@ -38,6 +38,9 @@ async function globalSetup() {
       email: testUserEmail,
       password: testUserPassword,
       email_confirm: true,
+      user_metadata: {
+        display_name: "Test User",
+      },
     });
     if (createUserError) {
       throw new Error(`Could not create test user: ${createUserError.message}`);

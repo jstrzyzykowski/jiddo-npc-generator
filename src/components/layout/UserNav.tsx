@@ -11,7 +11,7 @@ export function UserNav() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative size-9 rounded-full">
-          <Avatar className="size-9 cursor-pointer">
+          <Avatar className="size-9 cursor-pointer" data-testid="user-avatar">
             <AvatarFallback>{user?.displayName?.slice(0, 1).toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
