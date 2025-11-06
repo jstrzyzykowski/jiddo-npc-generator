@@ -4,6 +4,7 @@
 ![Astro](https://img.shields.io/badge/Astro-5.x-FF5D01?logo=astro&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+[![CI](https://github.com/jstrzyzykowski/jiddo-npc-generator/actions/workflows/master.yml/badge.svg)](https://github.com/jstrzyzykowski/jiddo-npc-generator/actions/workflows/master.yml)
 ![Version](https://img.shields.io/badge/version-0.0.1-informational)
 ![License](https://img.shields.io/badge/license-TBD-lightgrey)
 
