@@ -1,0 +1,33 @@
+name: CI (manual and master)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-test:
+    name: Build and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node and install
+        uses: ./.github/actions/node-setup-and-install
+
+      - name: Run unit tests (Vitest)
+        run: npm run test -- --run
+
+      - name: Build (production)
+        run: npm run build
+
+      - name: Upload build artifact (dist)
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: ignore
+          retention-days: 7
