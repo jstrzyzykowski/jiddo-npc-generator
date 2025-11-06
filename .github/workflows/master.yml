@@ -24,6 +24,7 @@ jobs:
         run: npm run test -- --run
 
   build:
+    needs: test
     name: Build application
     runs-on: ubuntu-latest
     steps:
