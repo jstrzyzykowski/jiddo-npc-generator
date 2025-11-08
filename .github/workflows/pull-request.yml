@@ -79,11 +79,6 @@ jobs:
     needs:
       - lint
     environment: integration
-    outputs:
-      coverage_lines: ${{ steps.coverage.outputs.lines }}
-      coverage_statements: ${{ steps.coverage.outputs.statements }}
-      coverage_branches: ${{ steps.coverage.outputs.branches }}
-      coverage_functions: ${{ steps.coverage.outputs.functions }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -113,27 +108,6 @@ jobs:
           path: playwright-report
           retention-days: 5
 
-      - name: Extract E2E coverage summary
-        id: coverage
-        shell: bash
-        run: |
-          if [ -f coverage-e2e/coverage-summary.json ]; then
-            node --input-type=module -e "import fs from 'node:fs'; import path from 'node:path'; const summary = JSON.parse(fs.readFileSync(path.resolve('coverage-e2e/coverage-summary.json'), 'utf8')).total; for (const key of ['lines','statements','branches','functions']) { console.log(\`\${key}=\${summary[key].pct}\`); }" >> "$GITHUB_OUTPUT"
-          else
-            echo 'lines=N/A' >> "$GITHUB_OUTPUT"
-            echo 'statements=N/A' >> "$GITHUB_OUTPUT"
-            echo 'branches=N/A' >> "$GITHUB_OUTPUT"
-            echo 'functions=N/A' >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Upload E2E coverage (if available)
-        if: ${{ hashFiles('coverage-e2e/**') != '' }}
-        uses: actions/upload-artifact@v5
-        with:
-          name: e2e-coverage
-          path: coverage-e2e
-          retention-days: 5
-
   status-comment:
     name: Status comment
     runs-on: ubuntu-latest
@@ -153,26 +127,14 @@ jobs:
               branches: "${{ needs['unit-tests'].outputs.coverage_branches }}",
               functions: "${{ needs['unit-tests'].outputs.coverage_functions }}",
             };
-            const e2e = {
-              lines: "${{ needs['e2e-tests'].outputs.coverage_lines }}",
-              statements: "${{ needs['e2e-tests'].outputs.coverage_statements }}",
-              branches: "${{ needs['e2e-tests'].outputs.coverage_branches }}",
-              functions: "${{ needs['e2e-tests'].outputs.coverage_functions }}",
-            };
             const body = [
               '✅ Lint, Unit tests, and E2E tests passed.',
               '',
-              'Unit test coverage:',
-              `- Lines: ${unit.lines}`,
-              `- Statements: ${unit.statements}`,
-              `- Branches: ${unit.branches}`,
-              `- Functions: ${unit.functions}`,
-              '',
-              'E2E coverage:',
-              `- Lines: ${e2e.lines}`,
-              `- Statements: ${e2e.statements}`,
-              `- Branches: ${e2e.branches}`,
-              `- Functions: ${e2e.functions}`,
+              '**Unit test coverage:**',
+              `- Lines: ${unit.lines}%`,
+              `- Statements: ${unit.statements}%`,
+              `- Branches: ${unit.branches}%`,
+              `- Functions: ${unit.functions}%`,
             ].join('\n');
             await github.rest.issues.createComment({
               owner: context.repo.owner,
