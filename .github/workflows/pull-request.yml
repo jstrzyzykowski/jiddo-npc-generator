@@ -148,16 +148,16 @@ jobs:
         with:
           script: |
             const unit = {
-              lines: '${{ needs["unit-tests"].outputs.coverage_lines }}',
-              statements: '${{ needs["unit-tests"].outputs.coverage_statements }}',
-              branches: '${{ needs["unit-tests"].outputs.coverage_branches }}',
-              functions: '${{ needs["unit-tests"].outputs.coverage_functions }}',
+              lines: "${{ needs['unit-tests'].outputs.coverage_lines }}",
+              statements: "${{ needs['unit-tests'].outputs.coverage_statements }}",
+              branches: "${{ needs['unit-tests'].outputs.coverage_branches }}",
+              functions: "${{ needs['unit-tests'].outputs.coverage_functions }}",
             };
             const e2e = {
-              lines: '${{ needs["e2e-tests"].outputs.coverage_lines }}',
-              statements: '${{ needs["e2e-tests"].outputs.coverage_statements }}',
-              branches: '${{ needs["e2e-tests"].outputs.coverage_branches }}',
-              functions: '${{ needs["e2e-tests"].outputs.coverage_functions }}',
+              lines: "${{ needs['e2e-tests'].outputs.coverage_lines }}",
+              statements: "${{ needs['e2e-tests'].outputs.coverage_statements }}",
+              branches: "${{ needs['e2e-tests'].outputs.coverage_branches }}",
+              functions: "${{ needs['e2e-tests'].outputs.coverage_functions }}",
             };
             const body = [
               '✅ Lint, Unit tests, and E2E tests passed.',
