@@ -57,17 +57,7 @@ jobs:
         shell: bash
         run: |
           if [ -f coverage/coverage-summary.json ]; then
-            node --input-type=module <<'NODE' >> "$GITHUB_OUTPUT"
-            import fs from 'node:fs';
-            import path from 'node:path';
-
-            const summaryPath = path.resolve('coverage/coverage-summary.json');
-            const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8')).total;
-            console.log(`lines=${summary.lines.pct}`);
-            console.log(`statements=${summary.statements.pct}`);
-            console.log(`branches=${summary.branches.pct}`);
-            console.log(`functions=${summary.functions.pct}`);
-NODE
+            node --input-type=module -e "import fs from 'node:fs'; import path from 'node:path'; const summary = JSON.parse(fs.readFileSync(path.resolve('coverage/coverage-summary.json'), 'utf8')).total; for (const key of ['lines','statements','branches','functions']) { console.log(\`\${key}=\${summary[key].pct}\`); }" >> "$GITHUB_OUTPUT"
           else
             echo 'lines=N/A' >> "$GITHUB_OUTPUT"
             echo 'statements=N/A' >> "$GITHUB_OUTPUT"
@@ -128,17 +118,7 @@ NODE
         shell: bash
         run: |
           if [ -f coverage-e2e/coverage-summary.json ]; then
-            node --input-type=module <<'NODE' >> "$GITHUB_OUTPUT"
-            import fs from 'node:fs';
-            import path from 'node:path';
-
-            const summaryPath = path.resolve('coverage-e2e/coverage-summary.json');
-            const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8')).total;
-            console.log(`lines=${summary.lines.pct}`);
-            console.log(`statements=${summary.statements.pct}`);
-            console.log(`branches=${summary.branches.pct}`);
-            console.log(`functions=${summary.functions.pct}`);
-NODE
+            node --input-type=module -e "import fs from 'node:fs'; import path from 'node:path'; const summary = JSON.parse(fs.readFileSync(path.resolve('coverage-e2e/coverage-summary.json'), 'utf8')).total; for (const key of ['lines','statements','branches','functions']) { console.log(\`\${key}=\${summary[key].pct}\`); }" >> "$GITHUB_OUTPUT"
           else
             echo 'lines=N/A' >> "$GITHUB_OUTPUT"
             echo 'statements=N/A' >> "$GITHUB_OUTPUT"
@@ -200,4 +180,3 @@ NODE
               issue_number: context.issue.number,
               body,
             });
-
