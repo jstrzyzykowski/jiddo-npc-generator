@@ -1,8 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
 
 import type { SupabaseClient } from "../../db/supabase.client";
 import type { Database, Json } from "../../db/database.types";
@@ -40,6 +38,7 @@ import type { NpcOwnerSummaryDto } from "@/types/profile";
 import { createEvent as createTelemetryEvent, TelemetryServiceError } from "@/services/telemetryService";
 import { PUBLIC_SUPABASE_URL } from "astro:env/client";
 import { SUPABASE_SECRET_KEY } from "astro:env/server";
+import luaTemplate from "@/assets/lua/default.lua?raw";
 
 type NpcInsert = Database["public"]["Tables"]["npcs"]["Insert"];
 type NpcRow = Database["public"]["Tables"]["npcs"]["Row"];
@@ -112,7 +111,6 @@ export class NpcServiceError extends Error {
 }
 
 const DEFAULT_XML_BUCKET = "npc-xml-files";
-const DEFAULT_LUA_FILE_PATH = resolve("src", "assets", "lua", "default.lua");
 const KNOWN_GENERATION_JOB_ERROR_CODES = new Set<GenerationJobErrorCode>([
   "AI_TIMEOUT",
   "AI_INVALID_XML",
@@ -1002,12 +1000,10 @@ export class NpcService {
     options: {
       includeDraft?: boolean;
       storageBucket?: string;
-      luaFilePath?: string;
     } = {}
   ): Promise<NpcDetailResponseDto> {
     const includeDraft = options.includeDraft ?? false;
     const storageBucket = options.storageBucket ?? DEFAULT_XML_BUCKET;
-    const luaFilePath = options.luaFilePath ?? DEFAULT_LUA_FILE_PATH;
 
     if (includeDraft && !userId) {
       throw new NpcServiceError("NPC_ACCESS_FORBIDDEN", {
@@ -1035,7 +1031,7 @@ export class NpcService {
       }
     }
 
-    const luaContent = await this.readLuaTemplate(luaFilePath);
+    const luaContent = this.readLuaTemplate();
 
     return {
       id: npcWithOwner.id,
@@ -1198,16 +1194,14 @@ export class NpcService {
     }
   }
 
-  private async readLuaTemplate(luaFilePath: string): Promise<string> {
-    const absolutePath = resolve(luaFilePath);
-
-    try {
-      const buffer = await readFile(absolutePath, { encoding: "utf-8" });
-      return buffer;
-    } catch (error) {
-      console.error("NpcService.readLuaTemplate", error);
-      throw new NpcServiceError("LUA_READ_FAILED", { cause: error });
+  private readLuaTemplate(): string {
+    if (!luaTemplate) {
+      console.error("NpcService.readLuaTemplate: LUA template is not available");
+      throw new NpcServiceError("LUA_READ_FAILED", {
+        cause: new Error("Embedded LUA script is missing"),
+      });
     }
+    return luaTemplate;
   }
 
   private ensureStorageClient(): SupabaseClient {
