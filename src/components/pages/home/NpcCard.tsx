@@ -78,7 +78,7 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
       )}
     >
       <div
-        className="absolute inset-0 grayscale opacity-10"
+        className="absolute inset-0 grayscale opacity-20 dark:opacity-10"
         style={{
           backgroundImage: `url(${background.src})`,
           backgroundSize: "cover",

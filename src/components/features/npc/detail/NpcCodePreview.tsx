@@ -132,7 +132,7 @@ function CodeBlock({ value, language }: CodeBlockProps) {
       </div>
       <ScrollArea className="h-86">
         <pre className="font-mono whitespace-pre-wrap break-words p-4 text-xs leading-relaxed text-foreground">
-          <code>{content}</code>
+          <code className="break-all">{content}</code>
         </pre>
       </ScrollArea>
     </div>
