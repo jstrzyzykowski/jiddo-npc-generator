@@ -13,6 +13,9 @@ export default defineConfig({
   server: { port: 3000 },
   vite: {
     plugins: [tailwindcss()],
+    ssr: {
+      external: ["node:buffer", "node:crypto"],
+    },
   },
   adapter: cloudflare(),
   devToolbar: {
