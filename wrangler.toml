@@ -1,5 +1,5 @@
 name = "jiddo-npc-generator"
 pages_build_output_dir = "./dist"
-compatibility_date = "2025-09-15"
+compatibility_date = "2025-11-10"
 
 compatibility_flags = ["nodejs_compat", "disable_nodejs_process_v2"]
