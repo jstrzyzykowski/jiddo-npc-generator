@@ -1,10 +1,10 @@
 // @ts-check
-import { defineConfig } from "astro/config";
+import { defineConfig, envField } from "astro/config";
 
 import react from "@astrojs/react";
 import sitemap from "@astrojs/sitemap";
 import tailwindcss from "@tailwindcss/vite";
-import node from "@astrojs/node";
+import cloudflare from "@astrojs/cloudflare";
 
 // https://astro.build/config
 export default defineConfig({
@@ -14,7 +14,19 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
   },
-  adapter: node({
-    mode: "standalone",
-  }),
+  adapter: cloudflare(),
+  devToolbar: {
+    enabled: false,
+  },
+  env: {
+    schema: {
+      PUBLIC_SUPABASE_URL: envField.string({ context: "server", access: "public" }),
+      PUBLIC_SUPABASE_PUBLISHABLE_KEY: envField.string({ context: "server", access: "public" }),
+      SUPABASE_SECRET_KEY: envField.string({ context: "server", access: "secret" }),
+      OPENROUTER_API_KEY: envField.string({ context: "server", access: "secret" }),
+      APP_URL: envField.string({ context: "server", access: "secret" }),
+      APP_TITLE: envField.string({ context: "server", access: "secret" }),
+      PUBLIC_ENV_NAME: envField.string({ context: "server", access: "public" }),
+    },
+  },
 });

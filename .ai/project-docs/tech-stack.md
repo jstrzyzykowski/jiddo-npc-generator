@@ -21,7 +21,7 @@ AI – Komunikacja z modelami przez usługę Openrouter.ai:
 CI/CD i Hosting:
 
 - Github Actions do tworzenia pipeline’ów CI/CD
-- Vercel do hostowania aplikacji
+- Cloudflare Pages jako hosting aplikacji Astro
 
 Testowanie:
 
