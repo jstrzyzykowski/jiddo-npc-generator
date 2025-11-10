@@ -70,7 +70,7 @@ export function MobileNav({ className }: MobileNavProps) {
             )}
           </div>
           <SheetFooter className="border-t px-6 py-4">
-            <ThemeToggle className="w-full justify-between" />
+            <ThemeToggle className="w-full justify-center" />
           </SheetFooter>
         </SheetContent>
       </Sheet>
