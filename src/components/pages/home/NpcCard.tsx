@@ -1,5 +1,6 @@
 import { CircleHelp, MessageSquareText, ShoppingBag, Save } from "lucide-react";
 import { useCallback } from "react";
+import background from "@/assets/images/background.png";
 
 import { NpcOwnerActions } from "@/components/features/npc/actions/NpcOwnerActions";
 import { Badge } from "@/components/ui/badge";
@@ -72,10 +73,20 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
   return (
     <Card
       className={cn(
-        "relative flex h-full min-h-[392px] flex-col overflow-hidden border border-border/60 bg-muted/40 transition-colors duration-200 hover:bg-muted/30",
+        "group relative flex h-full min-h-[392px] flex-col overflow-hidden ring-1 ring-inset ring-border/60",
         className
       )}
     >
+      <div
+        className="absolute inset-0 grayscale opacity-10"
+        style={{
+          backgroundImage: `url(${background.src})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-muted/100 via-muted/40 to-transparent" />
+      <div className="absolute inset-0 bg-black/10 transition-colors duration-200 group-hover:bg-black/20" />
       <NpcOwnerActions
         npc={{ id: npc.id, name: npc.name, status: npc.status }}
         isOwner={isOwner}

@@ -7,8 +7,6 @@ import outfitPreview from "@/assets/images/Outfit_Martial_Artist_Female_Addon_3.
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-
 import type { NpcMetadataViewModel } from "./types";
 
 const MODULE_ICONS: Record<string, LucideIcon> = {
@@ -54,9 +52,9 @@ export function NpcMetadataPanel({ metadata }: NpcMetadataPanelProps) {
       </header>
 
       <dl className="grid gap-4 text-sm sm:grid-cols-2">
-        <MetadataItem label="Created" value={createdAt} tooltip={createdAt} />
-        <MetadataItem label="Last updated" value={updatedAt} tooltip={updatedAt} />
-        <MetadataItem label="Published" value={publishedAt ?? "Not published"} tooltip={publishedAt ?? undefined} />
+        <MetadataItem label="Created" value={createdAt} />
+        <MetadataItem label="Last updated" value={updatedAt} />
+        <MetadataItem label="Published" value={publishedAt ?? "Not published"} />
       </dl>
 
       <div className="flex flex-col gap-3">
@@ -70,33 +68,16 @@ export function NpcMetadataPanel({ metadata }: NpcMetadataPanelProps) {
 interface MetadataItemProps {
   label: string;
   value: ReactNode;
-  tooltip?: string;
 }
 
-function MetadataItem({ label, value, tooltip }: MetadataItemProps) {
+function MetadataItem({ label, value }: MetadataItemProps) {
   const stringValue = typeof value === "string" ? value : null;
   const isUnavailable = stringValue === "Not available" || stringValue === "Not published";
 
   return (
     <div className="flex flex-col gap-1">
       <dt className="text-xs font-semibold tracking-wide text-muted-foreground">{label}</dt>
-      <dd
-        className={cn("text-sm font-medium text-foreground", isUnavailable && "text-muted-foreground")}
-        data-tooltip={tooltip && !isUnavailable ? "true" : undefined}
-      >
-        {tooltip && !isUnavailable ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="cursor-help underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                {value}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="top">{tooltip}</TooltipContent>
-          </Tooltip>
-        ) : (
-          value
-        )}
-      </dd>
+      <dd className={cn("text-sm font-medium text-foreground", isUnavailable && "text-muted-foreground")}>{value}</dd>
     </div>
   );
 }
