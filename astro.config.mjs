@@ -20,13 +20,15 @@ export default defineConfig({
   },
   env: {
     schema: {
-      PUBLIC_SUPABASE_URL: envField.string({ context: "server", access: "public" }),
-      PUBLIC_SUPABASE_PUBLISHABLE_KEY: envField.string({ context: "server", access: "public" }),
+      PUBLIC_SUPABASE_URL: envField.string({ context: "client", access: "public" }),
+      PUBLIC_SUPABASE_PUBLISHABLE_KEY: envField.string({ context: "client", access: "public" }),
+      PUBLIC_ENV_NAME: envField.string({ context: "client", access: "public" }),
+
       SUPABASE_SECRET_KEY: envField.string({ context: "server", access: "secret" }),
       OPENROUTER_API_KEY: envField.string({ context: "server", access: "secret" }),
-      APP_URL: envField.string({ context: "server", access: "secret" }),
-      APP_TITLE: envField.string({ context: "server", access: "secret" }),
-      PUBLIC_ENV_NAME: envField.string({ context: "server", access: "public" }),
+
+      APP_URL: envField.string({ context: "server", access: "public" }),
+      APP_TITLE: envField.string({ context: "server", access: "public" }),
     },
   },
 });

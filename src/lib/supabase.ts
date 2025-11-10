@@ -1,8 +1,8 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import type { AstroCookies } from "astro";
 
-export const createSupabaseServerClient = (cookies: AstroCookies) => {
-  return createServerClient(import.meta.env.PUBLIC_SUPABASE_URL, import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY, {
+export const createSupabaseServerClient = (cookies: AstroCookies, supabaseUrl: string, supabaseKey: string) => {
+  return createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       get(key: string) {
         return cookies.get(key)?.value;
