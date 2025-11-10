@@ -38,6 +38,8 @@ import type {
 } from "@/types/npc";
 import type { NpcOwnerSummaryDto } from "@/types/profile";
 import { createEvent as createTelemetryEvent, TelemetryServiceError } from "@/services/telemetryService";
+import { PUBLIC_SUPABASE_URL } from "astro:env/client";
+import { SUPABASE_SECRET_KEY } from "astro:env/server";
 
 type NpcInsert = Database["public"]["Tables"]["npcs"]["Insert"];
 type NpcRow = Database["public"]["Tables"]["npcs"]["Row"];
@@ -1219,8 +1221,8 @@ export class NpcService {
       return this.serviceRoleClient;
     }
 
-    const url = import.meta.env.PUBLIC_SUPABASE_URL;
-    const serviceKey = import.meta.env.SUPABASE_SECRET_KEY;
+    const url = PUBLIC_SUPABASE_URL;
+    const serviceKey = SUPABASE_SECRET_KEY;
 
     if (!url || !serviceKey) {
       throw new NpcServiceError(errorCode, {
