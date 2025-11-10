@@ -1,10 +1,9 @@
 import { defineMiddleware } from "astro:middleware";
 import { createSupabaseServerClient } from "../lib/supabase";
-import { PUBLIC_SUPABASE_URL } from "astro:env/client";
-import { SUPABASE_SECRET_KEY } from "astro:env/server";
+import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY } from "astro:env/client";
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  const supabase = createSupabaseServerClient(context.cookies, PUBLIC_SUPABASE_URL, SUPABASE_SECRET_KEY);
+  const supabase = createSupabaseServerClient(context.cookies, PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_PUBLISHABLE_KEY);
 
   const {
     data: { session },
