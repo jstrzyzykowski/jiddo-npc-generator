@@ -13,9 +13,16 @@ describe("LogoLink", () => {
     expect(linkElement).toHaveAttribute("href", "/");
   });
 
-  it("should render the logo text", () => {
+  it("should render the logo image and text", () => {
     render(<LogoLink />);
-    const logoText = screen.getByText("JIDDO");
-    expect(logoText).toBeInTheDocument();
+
+    const logoImage = screen.getByAltText("Jiddo logo");
+    expect(logoImage).toBeInTheDocument();
+
+    const jiddoText = screen.getByText("Jiddo");
+    expect(jiddoText).toBeInTheDocument();
+
+    const npcText = screen.getByText("NPC");
+    expect(npcText).toBeInTheDocument();
   });
 });

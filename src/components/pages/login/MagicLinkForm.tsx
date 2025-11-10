@@ -64,7 +64,7 @@ export function MagicLinkForm() {
           <img src={logoSignet.src} alt="Jiddo logo" className="h-8 w-auto" />
           <span className="inline-flex items-center text-xl">
             <span className="font-thin">Jiddo</span>
-            <span className="font-black"> NPC</span>
+            <span className="font-black">NPC</span>
           </span>
         </div>
         <div className="space-y-1.5">

@@ -19,7 +19,7 @@ export function LogoLink({ href = "/", className }: LogoLinkProps) {
       <img src={logoSignet.src} alt="Jiddo logo" className="h-7 w-auto" />
       <span className="hidden md:inline-flex items-center animate-slide-in-left">
         <span className="font-thin">Jiddo</span>
-        <span className="font-black"> NPC</span>
+        <span className="font-black">NPC</span>
       </span>
     </a>
   );
