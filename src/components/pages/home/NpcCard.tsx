@@ -91,13 +91,7 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
         href={linkUrl}
         className="group relative flex h-full flex-1 flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        <div
-          className="relative flex flex-col items-center justify-between gap-6 px-6 py-8 text-center"
-          style={{
-            backgroundImage: "radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)",
-            backgroundSize: "18px 18px",
-          }}
-        >
+        <div className="relative flex flex-col items-center justify-between gap-6 px-6 py-8 text-center">
           <img
             src={outfitPreview.src}
             alt="Preview of featured NPC"

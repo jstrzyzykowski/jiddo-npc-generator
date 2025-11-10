@@ -41,14 +41,24 @@ export interface PromptNpcModel {
 }
 
 export function toPromptModel(npc: Partial<NpcDetailResponseDto>): PromptNpcModel {
-  const safe = npc ?? ({} as Partial<NpcDetailResponseDto>);
+  const safeNpc = npc ?? ({} as Partial<NpcDetailResponseDto>);
 
   return {
-    name: asOptionalString(safe.name),
-    look: safe.look ?? null,
-    stats: safe.stats ?? null,
-    messages: safe.messages ?? null,
-    modules: safe.modules ?? null,
+    name: asOptionalString(safeNpc.name),
+    look: {
+      type: safeNpc.look?.type,
+      typeId: safeNpc.look?.typeId,
+      itemId: safeNpc.look?.itemId,
+      head: safeNpc.look?.head,
+      body: safeNpc.look?.body,
+      legs: safeNpc.look?.legs,
+      feet: safeNpc.look?.feet,
+      addons: safeNpc.look?.addons,
+      mount: safeNpc.look?.mount,
+    },
+    stats: safeNpc.stats ?? null,
+    messages: safeNpc.messages ?? null,
+    modules: safeNpc.modules ?? null,
   } satisfies PromptNpcModel;
 }
 

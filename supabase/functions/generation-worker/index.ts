@@ -60,7 +60,37 @@ async function fetchNpcDetails(npcId: string) {
   const { data, error } = await supabase.from("npcs").select("*").eq("id", npcId).single();
 
   if (error) throw new Error(`Failed to fetch npc details: ${error.message}`);
-  return data as Record<string, unknown>;
+
+  // Transform flat structure to nested for the service
+  const {
+    look_type,
+    look_type_ex,
+    look_item_id,
+    look_head,
+    look_body,
+    look_legs,
+    look_feet,
+    look_addons,
+    look_mount,
+    ...rest
+  } = data;
+
+  const npcDetails = {
+    ...rest,
+    look: {
+      type: look_type,
+      typeId: look_type_ex,
+      itemId: look_item_id,
+      head: look_head,
+      body: look_body,
+      legs: look_legs,
+      feet: look_feet,
+      addons: look_addons,
+      mount: look_mount,
+    },
+  };
+
+  return npcDetails as Record<string, unknown>;
 }
 
 async function saveXmlToStorage(npcId: string, xml: string) {
