@@ -47,8 +47,10 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
       const response = await fetch(`/api/npcs/${npc.id}/publish`, {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Accept: "application/json",
         },
+        body: JSON.stringify({ confirmed: true }),
       });
 
       if (!response.ok) {
