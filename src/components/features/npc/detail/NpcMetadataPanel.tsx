@@ -34,7 +34,7 @@ export function NpcMetadataPanel({ metadata }: NpcMetadataPanelProps) {
       className="relative flex flex-col gap-8 rounded-2xl border border-border/60 bg-card/60 p-6 shadow-sm backdrop-blur"
     >
       <header className="flex flex-col gap-6">
-        <div className="relative flex w-full items-center justify-center rounded-2xl bg-gradient-to-br from-muted/60 via-background to-muted/30 p-6 shadow-inner lg:p-10">
+        <div className="relative flex w-full items-center justify-center rounded-2xl p-6 shadow-inner lg:p-10">
           <img
             src={outfitPreview.src}
             alt="NPC outfit preview"
