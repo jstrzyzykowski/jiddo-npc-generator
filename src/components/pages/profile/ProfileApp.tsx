@@ -14,6 +14,7 @@ import { EditProfileDialog, type EditProfileFormValues } from "./EditProfileDial
 import { useAuth } from "@/components/auth/useAuth";
 import { toast } from "sonner";
 import { useProfileMe } from "@/hooks/useProfileMe";
+import { ProfileLoadingState } from "./ProfileLoadingState";
 
 export interface ProfileAppProps extends AppShellProps {
   userId: string;
@@ -112,6 +113,8 @@ function ProfileApp({ userId }: ProfileAppProps) {
               Try again
             </Button>
           </div>
+        ) : isLoading ? (
+          <ProfileLoadingState />
         ) : isCompletelyEmpty ? (
           <ProfileEmptyState />
         ) : (

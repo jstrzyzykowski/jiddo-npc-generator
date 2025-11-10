@@ -40,7 +40,11 @@ export function NpcStatusIndicator({ status, publishedAt, className }: NpcStatus
       <HoverCardTrigger asChild>
         <button
           type="button"
-          className={cn("inline-flex size-8 items-center justify-center rounded-full", config.className, className)}
+          className={cn(
+            "inline-flex size-8 items-center justify-center rounded-full bg-secondary/60",
+            config.className,
+            className
+          )}
           aria-label={`Status: ${config.label}`}
         >
           <StatusIcon className="size-5" aria-hidden />

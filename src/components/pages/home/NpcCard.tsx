@@ -1,4 +1,4 @@
-import { CircleHelp, MessageSquareText, ShoppingBag, Save } from "lucide-react";
+import { CircleHelp, MessageSquareText, ShoppingBag, Save, User } from "lucide-react";
 import { useCallback } from "react";
 import background from "@/assets/images/background.png";
 
@@ -115,7 +115,10 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
             <CardTitle className="text-xl font-semibold text-foreground transition-colors group-hover:text-primary">
               {npc.name}
             </CardTitle>
-            <p className="text-sm text-muted-foreground">{ownerName}</p>
+            <p className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
+              <User className="size-4" aria-hidden />
+              {ownerName}
+            </p>
           </CardHeader>
         </div>
 

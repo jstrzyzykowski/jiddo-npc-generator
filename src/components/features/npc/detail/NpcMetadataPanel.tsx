@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
-import { Crosshair, Map, MessageSquareText, Mic2, ShoppingBag } from "lucide-react";
+import { Crosshair, Map, MessageSquareText, Mic2, ShoppingBag, User } from "lucide-react";
 
 import outfitPreview from "@/assets/images/Outfit_Martial_Artist_Female_Addon_3.gif";
 import { Badge } from "@/components/ui/badge";
@@ -24,42 +24,46 @@ export interface NpcMetadataPanelProps {
 }
 
 export function NpcMetadataPanel({ metadata }: NpcMetadataPanelProps) {
-  const { name, author, createdAt, updatedAt, publishedAt, modules } = metadata;
+  const { name, author, createdAt, updatedAt, modules } = metadata;
 
   return (
     <section
       aria-labelledby="npc-metadata-title"
-      className="relative flex flex-col gap-8 rounded-2xl border border-border/60 bg-card/60 p-6 shadow-sm backdrop-blur"
+      className="relative flex flex-col gap-8 overflow-hidden rounded-2xl p-6 bg-card/60 border border-border/60 shadow-sm backdrop-blur"
     >
-      <header className="flex flex-col gap-6">
-        <div className="relative flex w-full items-center justify-center rounded-2xl p-6 shadow-inner lg:p-10">
-          <img
-            src={outfitPreview.src}
-            alt="NPC outfit preview"
-            width={144}
-            height={144}
-            className="h-28 w-28 object-contain drop-shadow-lg lg:h-32 lg:w-32"
-            loading="lazy"
-          />
+      <div className="relative z-10 flex h-full flex-col gap-8">
+        <header className="flex flex-col gap-6">
+          <div className="relative flex w-full items-center justify-center rounded-2xl p-6">
+            <img
+              src={outfitPreview.src}
+              alt="NPC outfit preview"
+              width={144}
+              height={144}
+              className="h-28 w-28 object-contain drop-shadow-lg lg:h-32 lg:w-32"
+              loading="lazy"
+            />
+          </div>
+
+          <div className="flex w-full flex-col items-center gap-2 text-center lg:items-start lg:text-left">
+            <h1 id="npc-metadata-title" className="text-xl font-semibold text-foreground sm:text-2xl">
+              {name}
+            </h1>
+            <p className="flex items-center gap-1 text-sm text-muted-foreground">
+              <User className="size-4" aria-hidden />
+              {author}
+            </p>
+          </div>
+        </header>
+
+        <dl className="flex flex-col gap-4 text-sm">
+          <MetadataItem label="Created" value={createdAt} />
+          <MetadataItem label="Last updated" value={updatedAt} />
+        </dl>
+
+        <div className="flex flex-col gap-3">
+          <h2 className="text-xs font-semibold tracking-wide text-muted-foreground">Modules</h2>
+          {renderModules(modules)}
         </div>
-
-        <div className="flex w-full flex-col items-center gap-2 text-center lg:items-start lg:text-left">
-          <h1 id="npc-metadata-title" className="text-xl font-semibold text-foreground sm:text-2xl">
-            {name}
-          </h1>
-          <p className="text-sm text-muted-foreground">Created by {author}</p>
-        </div>
-      </header>
-
-      <dl className="grid gap-4 text-sm sm:grid-cols-2">
-        <MetadataItem label="Created" value={createdAt} />
-        <MetadataItem label="Last updated" value={updatedAt} />
-        <MetadataItem label="Published" value={publishedAt ?? "Not published"} />
-      </dl>
-
-      <div className="flex flex-col gap-3">
-        <h2 className="text-xs font-semibold tracking-wide text-muted-foreground">Modules</h2>
-        {renderModules(modules)}
       </div>
     </section>
   );

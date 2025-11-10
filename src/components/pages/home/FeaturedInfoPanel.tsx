@@ -11,9 +11,9 @@ export function FeaturedInfoPanel() {
           <div className="flex shrink-0 size-12 items-center justify-center rounded-lg bg-muted">
             <Bot className="size-6 text-muted-foreground" />
           </div>
-          <CardTitle className="text-2xl">Discover Featured NPCs</CardTitle>
+          <CardTitle className="text-2xl font-bold">Discover Featured NPCs</CardTitle>
         </div>
-        <CardDescription className="max-w-[500px] pt-2">
+        <CardDescription className="max-w-[500px] pt-2 font-normal">
           Explore curated NPCs hand-picked by the community team. Check out traders, quest givers, and powerful bosses
           ready to drop into your world.
         </CardDescription>

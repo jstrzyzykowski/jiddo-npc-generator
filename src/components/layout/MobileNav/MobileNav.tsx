@@ -45,16 +45,15 @@ export function MobileNav({ className }: MobileNavProps) {
             <p className="text-lg font-semibold">Menu</p>
           </SheetHeader>
           <div className="flex flex-col gap-3 px-6 py-4">
-            <Button
-              asChild
-              size="lg"
-              disabled={!user || isLoading}
-              className="justify-start"
-              variant={user ? "default" : "secondary"}
-              onClick={handleNavigate}
-            >
-              <a href="/creator">Create NPC</a>
-            </Button>
+            {user && !isLoading ? (
+              <Button asChild size="lg" className="justify-start" variant="default" onClick={handleNavigate}>
+                <a href="/creator">Create NPC</a>
+              </Button>
+            ) : (
+              <Button size="lg" disabled className="justify-start" variant="secondary">
+                Create NPC
+              </Button>
+            )}
 
             {user ? (
               <Button asChild variant="ghost" className="justify-start" onClick={handleNavigate}>

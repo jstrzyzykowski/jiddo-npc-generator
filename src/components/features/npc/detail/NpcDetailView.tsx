@@ -80,7 +80,7 @@ export default function NpcDetailView({ npcId }: NpcDetailViewProps) {
           <NpcStatusIndicator
             status={metadata.status}
             publishedAt={metadata.publishedAt}
-            className="absolute left-6 top-6 z-10"
+            className="absolute left-6 top-6 z-20"
           />
           <NpcMetadataPanel metadata={metadata} />
           <NpcOwnerActions

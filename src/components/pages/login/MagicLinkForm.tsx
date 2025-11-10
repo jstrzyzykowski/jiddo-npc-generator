@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import logoSignet from "@/assets/images/comment.png";
 
 import { supabaseClient } from "@/db/supabase.client";
 import { MagicLinkFormSchema, type MagicFormViewModel } from "@/lib/validators/authValidators";
@@ -58,11 +59,20 @@ export function MagicLinkForm() {
 
   return (
     <Card>
-      <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl">Sign In</CardTitle>
-        <CardDescription>Enter your email to receive a login link.</CardDescription>
+      <CardHeader className="space-y-6 text-center">
+        <div className="inline-flex items-center justify-center gap-2 font-semibold tracking-tight text-foreground">
+          <img src={logoSignet.src} alt="Jiddo logo" className="h-8 w-auto" />
+          <span className="inline-flex items-center text-xl">
+            <span className="font-thin">Jiddo</span>
+            <span className="font-black"> NPC</span>
+          </span>
+        </div>
+        <div className="space-y-1.5">
+          <CardTitle className="text-xl font-bold">Log In with Magic Link</CardTitle>
+          <CardDescription>Welcome back! Enter your email to receive a login link.</CardDescription>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent>
         {isSubmitted ? (
           <Alert className="bg-muted/40 animate-slide-up">
             <Mail className="size-5" aria-hidden="true" />
@@ -73,7 +83,7 @@ export function MagicLinkForm() {
           </Alert>
         ) : (
           <Form {...form}>
-            <form className="space-y-4" onSubmit={form.handleSubmit(handleSubmit)} noValidate>
+            <form className="space-y-6" onSubmit={form.handleSubmit(handleSubmit)} noValidate>
               <FormField
                 control={form.control}
                 name="email"
@@ -103,7 +113,7 @@ export function MagicLinkForm() {
         )}
       </CardContent>
       {!isSubmitted ? (
-        <CardFooter className="flex flex-col items-start gap-2 text-xs text-muted-foreground">
+        <CardFooter className="flex flex-col items-center text-xs text-muted-foreground">
           <p>We&apos;ll email you a secure login link. No password required.</p>
         </CardFooter>
       ) : null}

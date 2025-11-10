@@ -684,124 +684,124 @@ const LOOK_TYPE_MIN = 1;
 
 const creatorShopItemSchema = z.object({
   list_type: z.enum(["buy", "sell"], {
-    required_error: "Typ listy jest wymagany.",
-    invalid_type_error: "Typ listy musi być wartością 'buy' lub 'sell'.",
+    required_error: "List type is required.",
+    invalid_type_error: "List type must be either 'buy' or 'sell'.",
   }),
   name: z
-    .string({ required_error: "Nazwa przedmiotu jest wymagana." })
+    .string({ required_error: "Item name is required." })
     .trim()
-    .min(1, "Nazwa przedmiotu jest wymagana.")
+    .min(1, "Item name is required.")
     .max(SHOP_ITEM_NAME_MAX_LENGTH, {
-      message: `Nazwa przedmiotu może mieć maksymalnie ${SHOP_ITEM_NAME_MAX_LENGTH} znaków.`,
+      message: `Item name can be at most ${SHOP_ITEM_NAME_MAX_LENGTH} characters long.`,
     }),
   item_id: z.coerce
-    .number({ invalid_type_error: "ID przedmiotu musi być liczbą." })
-    .int({ message: "ID przedmiotu musi być liczbą całkowitą." })
-    .min(SHOP_ITEM_ID_MIN, { message: "ID przedmiotu musi być dodatnią liczbą całkowitą." }),
+    .number({ invalid_type_error: "Item ID must be a number." })
+    .int({ message: "Item ID must be an integer." })
+    .min(SHOP_ITEM_ID_MIN, { message: "Item ID must be a positive integer." }),
   price: z.coerce
-    .number({ invalid_type_error: "Cena musi być liczbą." })
-    .int({ message: "Cena musi być liczbą całkowitą." })
-    .min(SHOP_ITEM_PRICE_MIN, { message: "Cena musi być liczbą nieujemną." }),
+    .number({ invalid_type_error: "Price must be a number." })
+    .int({ message: "Price must be an integer." })
+    .min(SHOP_ITEM_PRICE_MIN, { message: "Price must be a non-negative number." }),
   subtype: z.coerce
-    .number({ invalid_type_error: "Subtype musi być liczbą." })
-    .int({ message: "Subtype musi być liczbą całkowitą." })
-    .min(SHOP_ITEM_SUBTYPE_MIN, { message: "Subtype nie może być liczbą ujemną." })
+    .number({ invalid_type_error: "Subtype must be a number." })
+    .int({ message: "Subtype must be an integer." })
+    .min(SHOP_ITEM_SUBTYPE_MIN, { message: "Subtype cannot be a negative number." })
     .optional(),
   charges: z.coerce
-    .number({ invalid_type_error: "Charges musi być liczbą." })
-    .int({ message: "Charges musi być liczbą całkowitą." })
-    .min(SHOP_ITEM_CHARGES_MIN, { message: "Charges nie może być liczbą ujemną." })
+    .number({ invalid_type_error: "Charges must be a number." })
+    .int({ message: "Charges must be an integer." })
+    .min(SHOP_ITEM_CHARGES_MIN, { message: "Charges cannot be a negative number." })
     .optional(),
   real_name: z
-    .string({ invalid_type_error: "Real name musi być tekstem." })
+    .string({ invalid_type_error: "Real name must be a string." })
     .trim()
     .max(SHOP_ITEM_REAL_NAME_MAX_LENGTH, {
-      message: `Alternatywna nazwa może mieć maksymalnie ${SHOP_ITEM_REAL_NAME_MAX_LENGTH} znaków.`,
+      message: `Real name can be at most ${SHOP_ITEM_REAL_NAME_MAX_LENGTH} characters long.`,
     })
     .optional(),
   container_item_id: z.coerce
-    .number({ invalid_type_error: "Container item ID musi być liczbą." })
-    .int({ message: "Container item ID musi być liczbą całkowitą." })
+    .number({ invalid_type_error: "Container item ID must be a number." })
+    .int({ message: "Container item ID must be an integer." })
     .min(SHOP_ITEM_CONTAINER_MIN, {
-      message: "Container item ID musi być dodatnią liczbą całkowitą.",
+      message: "Container item ID must be a positive integer.",
     })
     .optional(),
 });
 
 const creatorKeywordSchema = z.object({
   response_text: z
-    .string({ required_error: "Tekst odpowiedzi jest wymagany." })
+    .string({ required_error: "Response text is required." })
     .trim()
-    .min(1, "Tekst odpowiedzi jest wymagany.")
+    .min(1, "Response text is required.")
     .max(KEYWORD_RESPONSE_MAX_LENGTH, {
-      message: `Tekst odpowiedzi może mieć maksymalnie ${KEYWORD_RESPONSE_MAX_LENGTH} znaków.`,
+      message: `Response text can be at most ${KEYWORD_RESPONSE_MAX_LENGTH} characters long.`,
     }),
   phrases: z
     .array(
       z
-        .string({ required_error: "Fraza jest wymagana." })
+        .string({ required_error: "Phrase is required." })
         .trim()
-        .min(KEYWORD_PHRASE_MIN_LENGTH, "Fraza nie może być pusta.")
+        .min(KEYWORD_PHRASE_MIN_LENGTH, "Phrase cannot be empty.")
         .max(KEYWORD_PHRASE_MAX_LENGTH, {
-          message: `Fraza może mieć maksymalnie ${KEYWORD_PHRASE_MAX_LENGTH} znaków.`,
+          message: `Phrase can be at most ${KEYWORD_PHRASE_MAX_LENGTH} characters long.`,
         }),
-      { required_error: "Lista fraz jest wymagana." }
+      { required_error: "List of phrases is required." }
     )
-    .min(1, "Musi istnieć co najmniej jedna fraza."),
+    .min(1, "At least one phrase is required."),
 });
 
 export const CreatorFormSchema = z
   .object({
     name: z
-      .string({ required_error: "Nazwa jest wymagana." })
+      .string({ required_error: "Name is required." })
       .trim()
       .min(NPC_NAME_MIN_LENGTH, {
-        message: `Nazwa musi mieć co najmniej ${NPC_NAME_MIN_LENGTH} znaki.`,
+        message: `Name must be at least ${NPC_NAME_MIN_LENGTH} characters long.`,
       })
       .max(NPC_NAME_MAX_LENGTH, {
-        message: `Nazwa może mieć maksymalnie ${NPC_NAME_MAX_LENGTH} znaków.`,
+        message: `Name can be at most ${NPC_NAME_MAX_LENGTH} characters long.`,
       }),
     look_type: z.coerce
-      .number({ invalid_type_error: "Typ wyglądu musi być liczbą." })
-      .int({ message: "Typ wyglądu musi być liczbą całkowitą." })
-      .min(LOOK_TYPE_MIN, { message: "Typ wyglądu musi być dodatnią liczbą całkowitą." }),
+      .number({ invalid_type_error: "Look type must be a number." })
+      .int({ message: "Look type must be an integer." })
+      .min(LOOK_TYPE_MIN, { message: "Look type must be a positive integer." }),
     look_head: z.coerce
-      .number({ invalid_type_error: "Kolor głowy musi być liczbą." })
-      .int({ message: "Kolor głowy musi być liczbą całkowitą." })
-      .min(LOOK_COLOR_MIN, { message: "Kolor głowy nie może być ujemny." })
+      .number({ invalid_type_error: "Head color must be a number." })
+      .int({ message: "Head color must be an integer." })
+      .min(LOOK_COLOR_MIN, { message: "Head color cannot be negative." })
       .max(LOOK_COLOR_MAX, {
-        message: `Kolor głowy może mieć wartość maksymalnie ${LOOK_COLOR_MAX}.`,
+        message: `Head color can be at most ${LOOK_COLOR_MAX}.`,
       }),
     look_body: z.coerce
-      .number({ invalid_type_error: "Kolor ciała musi być liczbą." })
-      .int({ message: "Kolor ciała musi być liczbą całkowitą." })
-      .min(LOOK_COLOR_MIN, { message: "Kolor ciała nie może być ujemny." })
+      .number({ invalid_type_error: "Body color must be a number." })
+      .int({ message: "Body color must be an integer." })
+      .min(LOOK_COLOR_MIN, { message: "Body color cannot be negative." })
       .max(LOOK_COLOR_MAX, {
-        message: `Kolor ciała może mieć wartość maksymalnie ${LOOK_COLOR_MAX}.`,
+        message: `Body color can be at most ${LOOK_COLOR_MAX}.`,
       }),
     look_legs: z.coerce
-      .number({ invalid_type_error: "Kolor nóg musi być liczbą." })
-      .int({ message: "Kolor nóg musi być liczbą całkowitą." })
-      .min(LOOK_COLOR_MIN, { message: "Kolor nóg nie może być ujemny." })
+      .number({ invalid_type_error: "Legs color must be a number." })
+      .int({ message: "Legs color must be an integer." })
+      .min(LOOK_COLOR_MIN, { message: "Legs color cannot be negative." })
       .max(LOOK_COLOR_MAX, {
-        message: `Kolor nóg może mieć wartość maksymalnie ${LOOK_COLOR_MAX}.`,
+        message: `Legs color can be at most ${LOOK_COLOR_MAX}.`,
       }),
     look_feet: z.coerce
-      .number({ invalid_type_error: "Kolor stóp musi być liczbą." })
-      .int({ message: "Kolor stóp musi być liczbą całkowitą." })
-      .min(LOOK_COLOR_MIN, { message: "Kolor stóp nie może być ujemny." })
+      .number({ invalid_type_error: "Feet color must be a number." })
+      .int({ message: "Feet color must be an integer." })
+      .min(LOOK_COLOR_MIN, { message: "Feet color cannot be negative." })
       .max(LOOK_COLOR_MAX, {
-        message: `Kolor stóp może mieć wartość maksymalnie ${LOOK_COLOR_MAX}.`,
+        message: `Feet color can be at most ${LOOK_COLOR_MAX}.`,
       }),
     look_addons: z.coerce
-      .number({ invalid_type_error: "Addony muszą być liczbą." })
-      .int({ message: "Addony muszą być liczbą całkowitą." })
-      .min(LOOK_ADDONS_MIN, { message: "Addony nie mogą być ujemne." })
+      .number({ invalid_type_error: "Addons must be a number." })
+      .int({ message: "Addons must be an integer." })
+      .min(LOOK_ADDONS_MIN, { message: "Addons cannot be negative." })
       .max(LOOK_ADDONS_MAX, {
-        message: `Addony mogą mieć wartość maksymalnie ${LOOK_ADDONS_MAX}.`,
+        message: `Addons can be at most ${LOOK_ADDONS_MAX}.`,
       }),
-    is_shop_active: z.boolean({ required_error: "Informacja o aktywności sklepu jest wymagana." }),
-    is_keywords_active: z.boolean({ required_error: "Informacja o aktywności słów kluczowych jest wymagana." }),
+    is_shop_active: z.boolean({ required_error: "Shop activity status is required." }),
+    is_keywords_active: z.boolean({ required_error: "Keywords activity status is required." }),
     shop_items: z.array(creatorShopItemSchema).max(SHOP_ITEMS_LIMIT_MAX).optional(),
     keywords: z.array(creatorKeywordSchema).max(KEYWORD_LIMIT_MAX).optional(),
   })
@@ -813,7 +813,7 @@ export const CreatorFormSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["shop_items"],
-          message: "Sklep musi zawierać co najmniej jeden przedmiot.",
+          message: "The shop must contain at least one item.",
         });
       }
     }
@@ -825,7 +825,7 @@ export const CreatorFormSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["keywords"],
-          message: "Słowa kluczowe muszą zawierać co najmniej jeden wpis.",
+          message: "Keywords must contain at least one entry.",
         });
       }
     }

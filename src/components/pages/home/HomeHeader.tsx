@@ -7,7 +7,7 @@ export function HomeHeader() {
   return (
     <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div className="flex items-center gap-3">
-        <h1 className="text-3xl font-semibold text-foreground">Featured NPCs</h1>
+        <h1 className="text-2xl font-bold text-foreground">Featured NPCs</h1>
         <HoverCard openDelay={0} closeDelay={0}>
           <HoverCardTrigger asChild>
             <button type="button" className="text-muted-foreground transition-colors hover:text-foreground">
