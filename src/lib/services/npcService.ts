@@ -688,23 +688,8 @@ export class NpcService {
       .update(updatePayload)
       .eq("id", npcId)
       .eq("owner_id", ownerId)
-      .select(
-        `
-          id,
-          name,
-          status,
-          published_at,
-          updated_at,
-          content_size_bytes,
-          shop_enabled,
-          keywords_enabled,
-          owner:profiles!npcs_owner_id_fkey (
-            id,
-            display_name
-          )
-        `
-      )
-      .maybeSingle();
+      .select(NPC_LIST_SELECT)
+      .single();
 
     if (error) {
       if (isForbiddenSupabaseError(error)) {
@@ -742,6 +727,7 @@ export class NpcService {
       },
       publishedAt: data.published_at,
       updatedAt: data.updated_at,
+      createdAt: data.created_at,
       contentSizeBytes: data.content_size_bytes,
     } satisfies UpdateNpcResponseDto;
   }
@@ -1601,6 +1587,7 @@ function mapToNpcListItem(row: RawNpcListRow): NpcListItemDto {
     modules,
     publishedAt: row.published_at,
     updatedAt: row.updated_at,
+    createdAt: row.created_at,
     contentSizeBytes: row.content_size_bytes,
   } satisfies NpcListItemDto;
 }

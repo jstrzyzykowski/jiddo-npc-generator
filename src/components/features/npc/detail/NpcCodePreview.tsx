@@ -21,10 +21,10 @@ const TABS: { value: "xml" | "lua"; label: string; description: string }[] = [
 ];
 
 const STATUS_LABELS: Record<Exclude<NpcCodePreviewProps["status"], undefined | "idle">, string> = {
-  queued: "Oczekuje w kolejce",
-  processing: "Generowanie w toku",
-  succeeded: "Wygenerowano",
-  failed: "Błąd generowania",
+  queued: "Waiting in queue",
+  processing: "Generation in progress",
+  succeeded: "Generated",
+  failed: "Generation error",
 };
 
 export function NpcCodePreview({ code, onCopy, isLoading, status, statusMessage, updatedAt }: NpcCodePreviewProps) {

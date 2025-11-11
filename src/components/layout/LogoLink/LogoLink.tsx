@@ -1,26 +1,38 @@
 import { cn } from "@/lib/utils";
-import logoSignet from "@/assets/images/comment.png";
+import logo from "@/assets/images/comment.png";
+import { Separator } from "@/components/ui/separator";
 
 interface LogoLinkProps {
   href?: string;
   className?: string;
 }
 
-export function LogoLink({ href = "/", className }: LogoLinkProps) {
+export function LogoLink({ className, ...props }: LogoLinkProps) {
   return (
     <a
-      href={href}
+      href="/"
       className={cn(
-        "inline-flex items-center flex-shrink-0 gap-2 font-semibold text-lg tracking-tight text-foreground transition-colors hover:text-primary",
+        "inline-flex flex-shrink-0 items-center gap-2 text-lg font-bold tracking-tight text-foreground",
         className
       )}
-      aria-label="Go to homepage"
+      {...props}
     >
-      <img src={logoSignet.src} alt="Jiddo logo" className="h-7 w-auto" />
-      <span className="hidden md:inline-flex items-center animate-slide-in-left">
-        <span className="font-thin">Jiddo</span>
-        <span className="font-black">NPC</span>
-      </span>
+      <img src={logo.src} alt="Jiddo NPC Logo" className="size-8" />
+      <div className="hidden md:flex flex-col items-start animate-slide-in-left">
+        <div className="inline-flex items-center">
+          <span className="font-thin">Jiddo</span>
+          <span className="font-black">NPC</span>
+        </div>
+        <span className="text-xs font-normal text-muted-foreground/50 -mt-1 tracking-wide">
+          <span className="inline-flex items-center gap-2">
+            TFS ≤ 1.5
+            <span className="h-3">
+              <Separator orientation="vertical" className="bg-muted-foreground/40" />
+            </span>
+            Legacy XML+Lua NPCs
+          </span>
+        </span>
+      </div>
     </a>
   );
 }

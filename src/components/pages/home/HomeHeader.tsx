@@ -1,4 +1,4 @@
-import { Info } from "lucide-react";
+import { ArrowRightIcon, Info } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -23,7 +23,7 @@ export function HomeHeader() {
       <Button variant="ghost" className="gap-2 self-start sm:self-auto" asChild>
         <a href="/npcs">
           Explore all NPCs
-          <span aria-hidden>→</span>
+          <ArrowRightIcon className="size-4" />
         </a>
       </Button>
     </header>

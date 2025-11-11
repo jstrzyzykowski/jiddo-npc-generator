@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function NpcSkeletonCard() {
   return (
-    <Card className="flex h-full min-h-[392px] flex-col border-dashed">
+    <Card className="flex h-full min-h-[392px] flex-col border-border/50">
       <CardHeader className="space-y-4">
         <Skeleton className="h-36 w-full" />
         <CardTitle>

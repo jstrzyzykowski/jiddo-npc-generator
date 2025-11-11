@@ -71,9 +71,44 @@ export function formatNpcForPrompt(model: PromptNpcModel): string {
     if (mod["focusEnabled"] !== undefined) lines.push(`- Focus: ${boolText(mod["focusEnabled"] as boolean)}`);
     if (mod["travelEnabled"] !== undefined) lines.push(`- Travel: ${boolText(mod["travelEnabled"] as boolean)}`);
     if (mod["voiceEnabled"] !== undefined) lines.push(`- Voice: ${boolText(mod["voiceEnabled"] as boolean)}`);
-    if (mod["shopEnabled"] !== undefined) lines.push(`- Shop: ${boolText(mod["shopEnabled"] as boolean)}`);
-    if (mod["shopMode"] !== undefined) lines.push(`- Shop Mode: ${inline(String(mod["shopMode"]))}`);
-    if (mod["keywordsEnabled"] !== undefined) lines.push(`- Keywords: ${boolText(mod["keywordsEnabled"] as boolean)}`);
+
+    if (mod["shopEnabled"] === true) {
+      lines.push(`- Shop: ${boolText(mod["shopEnabled"] as boolean)}`);
+      if (mod["shopMode"] !== undefined) lines.push(`- Shop Mode: ${inline(String(mod["shopMode"]))}`);
+
+      const shopItems = mod["shop_items"] as Record<string, unknown>[];
+      if (Array.isArray(shopItems) && shopItems.length > 0) {
+        lines.push("- Shop Items:");
+        for (const item of shopItems) {
+          const name = item["name"] ?? "Unknown";
+          const price = item["price"] ?? 0;
+          const type = item["list_type"] ?? "buy";
+          lines.push(`  - ${name} (price: ${price}, type: ${type})`);
+        }
+      }
+    }
+
+    if (mod["keywordsEnabled"] === true) {
+      lines.push(`- Keywords: ${boolText(mod["keywordsEnabled"] as boolean)}`);
+
+      const keywords = mod["keywords"] as Record<string, unknown>[];
+      if (Array.isArray(keywords) && keywords.length > 0) {
+        lines.push("- Keyword List:");
+        for (const keyword of keywords) {
+          const response = keyword["response"] ?? "No response";
+          lines.push(`  - response: ${inline(String(response))}`);
+
+          const phrases = keyword["phrases"] as Record<string, unknown>[];
+          if (Array.isArray(phrases) && phrases.length > 0) {
+            lines.push("    phrases:");
+            for (const p of phrases) {
+              lines.push(`      - ${inline(String(p["phrase"]))}`);
+            }
+          }
+        }
+      }
+    }
+
     lines.push("");
   }
 

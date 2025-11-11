@@ -15,17 +15,8 @@ Schema (strict):
   1. <health now="..." max="..."/>
   2. <look type="..." head="..." body="..." legs="..." feet="..." addons="..."/>
   3. Optional <voices> with one or more <voice text="..."/> entries.
-  4. <parameters> containing multiple <parameter key="..." value="..."/> entries.
+  4. <parameters> which contains all message and module configuration key-value pairs.
 - Self-close empty elements. Use double quotes for all attribute values. Use two-space indentation.
-
-Supported keys and modules (pass-through, no renaming):
-
-- Messages: message_greet, message_farewell, message_walkaway, and other message keys supported by Jiddo NpcSystem. Use placeholder |PLAYERNAME| when provided.
-- Modules: module_keywords, module_shop and other module keys.
-- Shop lists:
-  - shop_buyable: "name;id;price, name2;id2;price2"
-  - shop_sellable: "name;id;price, name2;id2;price2"
-  - Preserve input order. Separate triples with ", " (comma+space). Use integers for ids and prices.
 
 Defaults (only when missing in the request):
 
@@ -45,27 +36,56 @@ Validation and formatting:
 - If any shop item is missing id or price, omit that item from the list (do not invent values).
 - If required fields are missing (e.g., name), synthesize minimal valid placeholders using defaults and still return valid XML.
 
-Input contract (examples of accepted fields):
+Module Implementation Details:
 
-- name: NPC name string.
-- script: path to Lua script (optional).
-- walkinterval: integer ms (optional).
-- floorchange: 0/1 (optional).
-- health: { now: int, max: int } (optional).
-- look: { type: int, head: int, body: int, legs: int, feet: int, addons: int }.
-- voices: [ "text1", "text2", ... ] (optional).
-- messages: { message_greet: "...", message_farewell: "...", ... } (optional).
-- modules: [ "module_keywords", "module_shop", ... ] (optional).
-- shop: { buyable: [ { name, id, price }, ... ], sellable: [ { name, id, price }, ... ] } (optional).
+- All module logic is defined within <parameters> using <parameter key="..." value="..."/> tags.
 
-Output template (order must match):
+Keywords Module Implementation:
+- To enable, add: <parameter key="module_keywords" value="1" />
+- Define all trigger phrases in a single parameter: <parameter key="keywords" value="..." />.
+- The value is a semicolon-separated list of "phrase sets".
+- Each "phrase set" contains one or more trigger words/phrases, separated by spaces. The NPC will give the same reply for any trigger within a single set.
+- Example: value="hi hello;job offer;buy food" defines three phrase sets. The first set has two triggers ('hi', 'hello'), the second has two, and the third has two.
 
-1. XML declaration
-2. <npc ...>
-3. <health .../>
-4. <look .../>
-5. Optional <voices>...</voices> if voices provided
-6. <parameters> with message and module*_ parameters; include shop__ only if present
-7. </npc>
+To be extremely clear, here are more examples of the 'keywords' value and how it maps to replies:
+- value="quest": One phrase set. It will be answered by 'keyword_reply1'.
+- value="buy;sell": Two phrase sets. 'buy' is answered by 'keyword_reply1', 'sell' by 'keyword_reply2'.
+- value="mission task": One phrase set with two triggers. Both 'mission' and 'task' will be answered by 'keyword_reply1'.
+- value="king tibianus;army": Two phrase sets. 'king' and 'tibianus' are answered by 'keyword_reply1'. 'army' is answered by 'keyword_reply2'.
+
+- For each phrase set (each semicolon-separated group), provide a corresponding reply using a numbered key: <parameter key="keyword_reply1" value="..." />, <parameter key="keyword_reply2" value="..." />, etc. The number must match the phrase set's position (1-based index).
+
+Shop Module Implementation:
+- To enable, add: <parameter key="module_shop" value="1" />
+- Shop lists are defined in single-string parameters.
+- shop_buyable (items NPC sells): A semicolon-separated list of items. Each item is a comma-separated triple: "name,id,price". Example: "meat,2666,4;salmon,2668,4"
+- shop_sellable (items NPC buys): Same format as shop_buyable. If the NPC buys nothing, the value must be an empty string: value="".
+
+---
+
+Example of a correctly generated XML:
+
+This example demonstrates an NPC who is a food merchant. He has the 'shop' and 'keywords' modules enabled. He only sells items to players (shop_buyable is populated, shop_sellable is empty). Note the numbered keyword_reply keys corresponding to the order of words in the 'keywords' parameter. This is a sample configuration; other modules and parameters should be included if requested.
+
+<?xml version="1.0" encoding="UTF-8"?>
+<npc name="Bonifacius" script="default.lua" walkinterval="2000" floorchange="0">
+    <health now="100" max="100"/>
+    <look type="128" head="59" body="82" legs="58" feet="95"/>
+    <parameters>
+        <parameter key="message_greet" value="Thousands greetings, |PLAYERNAME|. How may I help you?"/>
+        <parameter key="message_farewell" value="May the gods bless your travels."/>
+        <parameter key="message_placedinqueue" value="I am deeply sorry, I am busy right now. I'll tell you when I'm done |PLAYERNAME|."/>
+        <parameter key="message_decline" value="May the gods bless your travels."/>
+        <parameter key="module_keywords" value="1" />
+        <parameter key="keywords" value="hi hello;job offer;buy food; cat" />
+        <parameter key="keyword_reply1" value="Reply to 'hi' or 'hello'." />
+        <parameter key="keyword_reply2" value="Reply to 'job' or 'offer'." />
+        <parameter key="keyword_reply3" value="Reply to 'buy' or 'food'." />
+        <parameter key="keyword_reply4" value="Reply to 'cat'." />
+        <parameter key="module_shop" value="1"/>
+        <parameter key="shop_buyable" value="meat,2666,4;salmon,2668,4;orange,2675,5;banana,2676,2;grapes,2681,3;melon,2682,8;pumpkin,2683,10;roll,2690,2;egg,2695,2;cheese,2696,5" />
+        <parameter key="shop_sellable" value="" />
+    </parameters>
+</npc>
 
 Always return only the final XML document.`;

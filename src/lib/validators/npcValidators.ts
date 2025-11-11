@@ -680,6 +680,7 @@ const SHOP_ITEM_CHARGES_MIN = 0;
 const SHOP_ITEM_CONTAINER_MIN = 1;
 const KEYWORD_PHRASE_MIN_LENGTH = 1;
 const NPC_NAME_MIN_LENGTH = 3;
+const NPC_NAME_MAX_LENGTH_TIBIA = 30;
 const LOOK_TYPE_MIN = 1;
 
 const creatorShopItemSchema = z.object({
@@ -758,8 +759,8 @@ export const CreatorFormSchema = z
       .min(NPC_NAME_MIN_LENGTH, {
         message: `Name must be at least ${NPC_NAME_MIN_LENGTH} characters long.`,
       })
-      .max(NPC_NAME_MAX_LENGTH, {
-        message: `Name can be at most ${NPC_NAME_MAX_LENGTH} characters long.`,
+      .max(NPC_NAME_MAX_LENGTH_TIBIA, {
+        message: `Name can be at most ${NPC_NAME_MAX_LENGTH_TIBIA} characters long.`,
       }),
     look_type: z.coerce
       .number({ invalid_type_error: "Look type must be a number." })

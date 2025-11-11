@@ -57,13 +57,28 @@ async function setJobStatus(
 }
 
 async function fetchNpcDetails(npcId: string) {
-  const { data, error } = await supabase.from("npcs").select("*").eq("id", npcId).single();
+  const { data: npcData, error: npcError } = await supabase.from("npcs").select("*").eq("id", npcId).single();
 
-  if (error) throw new Error(`Failed to fetch npc details: ${error.message}`);
+  if (npcError) throw new Error(`Failed to fetch npc details: ${npcError.message}`);
 
-  // Transform flat structure to nested for the service
+  const { data: shopItems, error: shopItemsError } = await supabase
+    .from("npc_shop_items")
+    .select("*")
+    .eq("npc_id", npcId);
+
+  if (shopItemsError) throw new Error(`Failed to fetch npc shop items: ${shopItemsError.message}`);
+
+  const { data: keywords, error: keywordsError } = await supabase
+    .from("npc_keywords")
+    .select("*, phrases:npc_keyword_phrases(*)")
+    .eq("npc_id", npcId);
+
+  if (keywordsError) throw new Error(`Failed to fetch npc keywords: ${keywordsError.message}`);
+
+  // Destructure all relevant fields from npcData
   const {
-    look_type,
+    // Look fields
+    look_type_id,
     look_type_ex,
     look_item_id,
     look_head,
@@ -72,14 +87,38 @@ async function fetchNpcDetails(npcId: string) {
     look_feet,
     look_addons,
     look_mount,
-    ...rest
-  } = data;
 
+    // Stats fields
+    health_now,
+    health_max,
+    walk_interval,
+    floor_change,
+
+    // Messages fields
+    greet_message,
+    farewell_message,
+    decline_message,
+    no_shop_message,
+    on_close_shop_message,
+
+    // Modules fields
+    focus_enabled,
+    travel_enabled,
+    voice_enabled,
+    shop_enabled,
+    shop_mode,
+    keywords_enabled,
+
+    // Other top-level fields
+    ...rest
+  } = npcData;
+
+  // Build the nested structure expected by the prompt formatter
   const npcDetails = {
     ...rest,
     look: {
-      type: look_type,
-      typeId: look_type_ex,
+      type: look_type_id,
+      typeEx: look_type_ex,
       itemId: look_item_id,
       head: look_head,
       body: look_body,
@@ -87,6 +126,29 @@ async function fetchNpcDetails(npcId: string) {
       feet: look_feet,
       addons: look_addons,
       mount: look_mount,
+    },
+    stats: {
+      healthNow: health_now,
+      healthMax: health_max,
+      walkInterval: walk_interval,
+      floorChange: floor_change,
+    },
+    messages: {
+      greet: greet_message,
+      farewell: farewell_message,
+      decline: decline_message,
+      noShop: no_shop_message,
+      onCloseShop: on_close_shop_message,
+    },
+    modules: {
+      focusEnabled: focus_enabled,
+      travelEnabled: travel_enabled,
+      voiceEnabled: voice_enabled,
+      shopEnabled: shop_enabled,
+      shopMode: shop_mode,
+      keywordsEnabled: keywords_enabled,
+      shop_items: shopItems, // Nest shop items here
+      keywords: keywords, // Nest keywords here
     },
   };
 

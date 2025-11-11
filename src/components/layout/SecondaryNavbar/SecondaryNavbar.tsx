@@ -1,5 +1,8 @@
 import { Home, Layers3, SlidersHorizontal, Check } from "lucide-react";
 
+import { useAuth } from "@/components/auth/useAuth";
+import { SORT_OPTIONS } from "@/components/features/npc/list/config";
+import { useOptionalNpcListContext } from "@/components/features/npc/list/NpcListProvider";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -7,15 +10,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { SORT_OPTIONS } from "@/components/features/npc/list/config";
-import { useOptionalNpcListContext } from "@/components/features/npc/list/NpcListProvider";
 
 interface SecondaryNavbarProps {
   currentPath: string;
 }
 
 export function SecondaryNavbar({ currentPath }: SecondaryNavbarProps) {
+  const { isLoading: isUserLoading } = useAuth();
   const npcListContext = useOptionalNpcListContext();
   const selectedSortLabel = npcListContext?.sort.label ?? "Sort";
   const showSortControls = !!npcListContext;
@@ -50,37 +53,41 @@ export function SecondaryNavbar({ currentPath }: SecondaryNavbarProps) {
 
         {showSortControls ? (
           <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <SlidersHorizontal className="size-4" />
-                  {selectedSortLabel}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {SORT_OPTIONS.map((option) => {
-                  const isActive = npcListContext?.sort.value === option.value;
+            {isUserLoading ? (
+              <Skeleton className="h-9 w-28 rounded-md" />
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <SlidersHorizontal className="size-4" />
+                    {selectedSortLabel}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {SORT_OPTIONS.map((option) => {
+                    const isActive = npcListContext?.sort.value === option.value;
 
-                  return (
-                    <DropdownMenuItem
-                      key={option.value}
-                      onSelect={(event) => {
-                        event.preventDefault();
-                        if (!npcListContext) {
-                          return;
-                        }
+                    return (
+                      <DropdownMenuItem
+                        key={option.value}
+                        onSelect={(event) => {
+                          event.preventDefault();
+                          if (!npcListContext) {
+                            return;
+                          }
 
-                        npcListContext.setSort(option);
-                      }}
-                      className={cn("flex items-center gap-2", isActive ? "font-semibold" : undefined)}
-                    >
-                      {option.label}
-                      {isActive ? <Check className="ml-auto size-4" aria-hidden="true" /> : null}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                          npcListContext.setSort(option);
+                        }}
+                        className={cn("flex items-center gap-2", isActive ? "font-semibold" : undefined)}
+                      >
+                        {option.label}
+                        {isActive ? <Check className="ml-auto size-4" aria-hidden="true" /> : null}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         ) : null}
       </div>

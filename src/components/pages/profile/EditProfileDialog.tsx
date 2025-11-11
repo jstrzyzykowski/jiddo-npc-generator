@@ -20,7 +20,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Spinner } from "@/components/ui/spinner";
 
 const Schema = z.object({
-  displayName: z.string().trim().min(1, "Display name is required").max(50, "Max 50 characters"),
+  displayName: z
+    .string()
+    .trim()
+    .min(3, "Display name must be at least 3 characters long")
+    .max(50, "Display name can be at most 50 characters long")
+    .regex(/.*[a-zA-Z].*/, "Display name must contain at least one letter"),
   bio: z.string().max(250, "Max 250 characters").optional(),
 });
 

@@ -1,4 +1,4 @@
-import { CircleHelp, MessageSquareText, ShoppingBag, Save, User } from "lucide-react";
+import { CircleHelp, MessageSquareText, ShoppingBag, Save, User, UserCheck, Sparkles } from "lucide-react";
 import { useCallback } from "react";
 import background from "@/assets/images/background.png";
 
@@ -39,6 +39,10 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
   const updatedLabel = formatDateLabel(npc.updatedAt);
   const modules = buildModules(npc.modules);
 
+  const createdAt = new Date(npc.createdAt);
+  const oneHourAgo = new Date(Date.now() - 1 * 60 * 60 * 1000);
+  const isNew = createdAt > oneHourAgo;
+
   const handlePublish = async () => {
     if (npc.status === "published") {
       return;
@@ -74,6 +78,7 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
     <Card
       className={cn(
         "group relative flex h-full min-h-[392px] flex-col overflow-hidden ring-1 ring-inset ring-border/60",
+        isOwner && "ring-2 ring-primary/50",
         className
       )}
     >
@@ -87,6 +92,30 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
       />
       <div className="absolute inset-0 bg-gradient-to-t from-muted/100 via-muted/40 to-transparent" />
       <div className="absolute inset-0 bg-black/10 transition-colors duration-200 group-hover:bg-black/20" />
+      {(isOwner || isNew) && (
+        <div className="absolute left-5 top-5 z-30 flex items-center gap-2">
+          {isOwner && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex">
+                  <UserCheck className="size-4 text-primary drop-shadow-lg" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top">You are the owner</TooltipContent>
+            </Tooltip>
+          )}
+          {isNew && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex">
+                  <Sparkles className="size-4 drop-shadow-lg" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top">Recently created</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      )}
       <NpcOwnerActions
         npc={{ id: npc.id, name: npc.name, status: npc.status }}
         isOwner={isOwner}
@@ -112,12 +141,12 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
             className="h-32 w-32 object-contain drop-shadow-lg"
           />
           <CardHeader className="w-full gap-1 p-0">
-            <CardTitle className="text-xl font-semibold text-foreground transition-colors group-hover:text-primary">
+            <CardTitle className="truncate text-xl font-semibold text-foreground transition-colors group-hover:text-primary">
               {npc.name}
             </CardTitle>
-            <p className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
-              <User className="size-4" aria-hidden />
-              {ownerName}
+            <p className="flex min-w-0 items-center justify-center gap-1 text-sm text-muted-foreground">
+              <User className="size-4 flex-shrink-0" aria-hidden />
+              <span className="truncate">{ownerName}</span>
             </p>
           </CardHeader>
         </div>
@@ -155,12 +184,9 @@ export function NpcCard({ npc, className, onRefresh }: NpcCardProps) {
 
           <HoverCard openDelay={0} closeDelay={0}>
             <HoverCardTrigger asChild>
-              <span
-                className="inline-flex size-8 items-center justify-center rounded-full bg-background/80 text-muted-foreground shadow transition-colors hover:text-primary"
-                aria-label="NPC details"
-              >
+              <div className="absolute right-6 bottom-1 z-30" aria-label="NPC details">
                 <CircleHelp className="size-4" aria-hidden="true" />
-              </span>
+              </div>
             </HoverCardTrigger>
             <HoverCardContent side="top" className="w-72 space-y-3">
               <div>

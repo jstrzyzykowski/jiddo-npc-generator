@@ -31,9 +31,9 @@ export function UserDropdown({ className, onLogout }: UserDropdownProps) {
   };
 
   return (
-    <DropdownMenuContent align="end" sideOffset={8} className={cn("min-w-[220px]", className)}>
+    <DropdownMenuContent align="end" sideOffset={8} className={cn("w-[220px]", className)}>
       <DropdownMenuLabel className="flex flex-col">
-        <span className="text-sm font-semibold">{user.displayName}</span>
+        <span className="truncate text-sm font-semibold">{user.displayName}</span>
         <span className="text-xs text-muted-foreground">Logged in</span>
       </DropdownMenuLabel>
       <DropdownMenuSeparator />

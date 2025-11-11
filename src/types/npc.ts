@@ -136,6 +136,7 @@ export interface NpcListItemDto {
   modules: NpcListModulesDto;
   publishedAt: NpcRow["published_at"];
   updatedAt: NpcRow["updated_at"];
+  createdAt: NpcRow["created_at"];
   contentSizeBytes: NpcRow["content_size_bytes"];
 }
 
