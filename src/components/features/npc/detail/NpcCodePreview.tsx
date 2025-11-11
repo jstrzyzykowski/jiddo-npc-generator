@@ -41,7 +41,7 @@ export function NpcCodePreview({ code, onCopy, isLoading, status, statusMessage,
       {isLoading ? (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-background/80">
           <Loader2 className="size-5 animate-spin text-primary" aria-hidden="true" />
-          <span className="text-sm text-muted-foreground">Trwa generowanie plików NPC...</span>
+          <span className="text-sm text-muted-foreground">Generating NPC files...</span>
         </div>
       ) : null}
 
