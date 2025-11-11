@@ -15,6 +15,7 @@ export function LogoLink({ className, ...props }: LogoLinkProps) {
         "inline-flex flex-shrink-0 items-center gap-2 text-lg font-bold tracking-tight text-foreground",
         className
       )}
+      aria-label="Go to homepage"
       {...props}
     >
       <img src={logo.src} alt="Jiddo NPC Logo" className="size-8" />

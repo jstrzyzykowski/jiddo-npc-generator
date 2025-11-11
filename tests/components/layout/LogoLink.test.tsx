@@ -16,7 +16,7 @@ describe("LogoLink", () => {
   it("should render the logo image and text", () => {
     render(<LogoLink />);
 
-    const logoImage = screen.getByAltText("Jiddo logo");
+    const logoImage = screen.getByAltText("Jiddo NPC Logo");
     expect(logoImage).toBeInTheDocument();
 
     const jiddoText = screen.getByText("Jiddo");
