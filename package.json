@@ -1,7 +1,7 @@
 {
   "name": "jiddo-npc-generator",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "scripts": {
     "dev": "astro dev",
     "dev:e2e": "astro dev --mode test",
